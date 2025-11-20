@@ -1,0 +1,6 @@
+minio>=7.0.0
+python-dotenv>=0.19.0
+humanize>=4.0.0
+Flask>=2.3.0
+Flask-SocketIO>=5.3.0
+APScheduler>=3.10.0

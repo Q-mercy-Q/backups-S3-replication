@@ -1,0 +1,41 @@
+2025-11-19 16:17:44,718 [INFO] Loaded 1 schedules and 1 history entries
+2025-11-19 16:44:29,647 [INFO] Loaded 1 schedules and 3 history entries
+2025-11-19 16:44:29,696 [INFO] Scheduler started
+2025-11-19 16:44:29,696 [DEBUG] Scheduling interval job: 1234 every 1440 minutes
+2025-11-19 16:44:29,696 [INFO] Scheduled job: 1234, next run: 2025-11-20 16:44:29.696232+05:00
+2025-11-19 16:44:29,696 [INFO] Restored 1 enabled schedules
+2025-11-19 16:45:04,461 [INFO] === Starting scheduled sync: 1234 ===
+2025-11-19 16:45:04,462 [DEBUG] Schedules saved to file
+2025-11-19 16:45:04,462 [DEBUG] Validating environment...
+2025-11-19 16:45:04,462 [DEBUG] Testing S3 connection...
+2025-11-19 16:45:04,495 [INFO] S3 connection test successful
+2025-11-19 16:45:04,495 [DEBUG] Scanning existing S3 files...
+2025-11-19 16:45:04,530 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 16:45:04,530 [DEBUG] Scanning backup files...
+2025-11-19 16:45:07,187 [ERROR] Scheduled sync error: 'tuple' object has no attribute 'size'
+2025-11-19 16:45:07,188 [DEBUG] Schedules saved to file
+2025-11-19 16:45:07,188 [INFO] === Scheduled sync finished: 1234 ===
+2025-11-19 16:57:16,631 [INFO] Loaded 1 schedules and 4 history entries
+2025-11-19 16:57:16,671 [INFO] Scheduler started
+2025-11-19 16:57:16,671 [DEBUG] Scheduling interval job: 1234 every 1440 minutes
+2025-11-19 16:57:16,671 [INFO] Scheduled job: 1234, next run: 2025-11-20 16:57:16.671434+05:00
+2025-11-19 16:57:16,672 [INFO] Restored 1 enabled schedules
+2025-11-19 16:57:26,618 [INFO] === Starting scheduled sync: 1234 ===
+2025-11-19 16:57:26,621 [DEBUG] Schedules saved to file
+2025-11-19 16:57:26,621 [DEBUG] Validating environment...
+2025-11-19 16:57:26,622 [DEBUG] Testing S3 connection...
+2025-11-19 16:57:26,651 [INFO] S3 connection test successful
+2025-11-19 16:57:26,651 [DEBUG] Scanning existing S3 files...
+2025-11-19 16:57:26,686 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 16:57:26,686 [DEBUG] Scanning backup files...
+2025-11-19 16:57:29,335 [INFO] Found 402 files to upload, total size: 4.5 TB
+2025-11-19 17:54:59,861 [INFO] Restored 0 enabled schedules
+2025-11-19 21:24:12,640 [INFO] Restored 0 enabled schedules
+2025-11-19 21:32:54,422 [INFO] Restored 0 enabled schedules
+2025-11-20 09:57:08,949 [INFO] Restored 0 enabled schedules
+2025-11-20 10:17:39,782 [INFO] Restored 0 enabled schedules
+2025-11-20 10:19:36,866 [INFO] Restored 0 enabled schedules
+2025-11-20 10:27:29,479 [INFO] Restored 0 enabled schedules
+2025-11-20 10:38:36,079 [INFO] Restored 0 enabled schedules
+2025-11-20 10:42:28,187 [INFO] Added schedule: 1234 (interval: 60)
+2025-11-20 10:56:52,350 [INFO] Restored 1 enabled schedules

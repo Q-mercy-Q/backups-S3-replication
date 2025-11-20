@@ -1,0 +1,69 @@
+2025-11-19 16:25:43,527 [INFO] === S3 Upload Manager Web Interface Started ===
+2025-11-19 16:25:43,528 [INFO] Scheduler started
+2025-11-19 16:25:43,528 [INFO] Scheduler started
+2025-11-19 16:25:43,528 [DEBUG] Scheduling interval job: 123 every 600 minutes
+2025-11-19 16:25:43,528 [INFO] Added job "123" to job store "default"
+2025-11-19 16:25:43,528 [INFO] Scheduled job: 123, next run: 2025-11-20 02:25:43.528624+05:00
+2025-11-19 16:25:43,529 [INFO] Restored 1 enabled schedules
+2025-11-19 16:25:45,027 [INFO] Client connected to S3 Upload Manager
+2025-11-19 16:26:08,427 [INFO] === Starting scheduled sync: 123 ===
+2025-11-19 16:26:08,429 [DEBUG] Schedules saved to file
+2025-11-19 16:26:08,429 [DEBUG] Validating environment...
+2025-11-19 16:26:08,429 [DEBUG] Testing S3 connection...
+2025-11-19 16:26:08,464 [INFO] ✓ Bucket access confirmed
+2025-11-19 16:26:08,465 [INFO] S3 connection test successful
+2025-11-19 16:26:08,465 [DEBUG] Scanning existing S3 files...
+2025-11-19 16:26:08,465 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 16:26:08,510 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 16:26:08,510 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 16:26:08,510 [DEBUG] Scanning backup files...
+2025-11-19 16:26:08,517 [INFO] Scanning NFS directory: /mnt/veeam_nfs
+2025-11-19 16:26:08,517 [INFO] Filter: last 7 days
+2025-11-19 16:26:12,771 [INFO] Found 402 files for upload
+2025-11-19 16:26:12,772 [INFO] Skipped 333 files (outside time range)
+2025-11-19 16:26:12,772 [INFO] Skipped 0 files (already in S3)
+2025-11-19 16:26:12,772 [INFO] Total size to upload: 4.5 TB
+2025-11-19 16:26:12,773 [INFO] Top 5 largest files to upload:
+2025-11-19 16:26:12,773 [INFO]     883.6 GB - 2025-11-18 03:24 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-18T000004_7B79.vbk
+2025-11-19 16:26:12,773 [INFO]     867.5 GB - 2025-11-15 06:39 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-15T000015_B2F4.vbk
+2025-11-19 16:26:12,774 [INFO]     296.8 GB - 2025-11-14 03:26 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-14T020005_29E5.vbk
+2025-11-19 16:26:12,774 [INFO]     296.1 GB - 2025-11-16 03:32 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-16T020017_BEAC.vbk
+2025-11-19 16:26:12,774 [INFO]     166.1 GB - 2025-11-14 02:48 - VDC_Petro_Critical02_VMs_Job/EHO DB_Int _192.168.121.42_-FLO8.vm-48536D2025-11-14T020005_40B2.vbk
+2025-11-19 16:26:12,775 [ERROR] Scheduled sync error: 'tuple' object has no attribute 'size'
+2025-11-19 16:26:12,775 [DEBUG] Schedules saved to file
+2025-11-19 16:26:12,776 [INFO] === Scheduled sync finished: 123 ===
+2025-11-19 16:26:40,922 [INFO] Removed job schedule_1763549547
+2025-11-19 16:26:40,922 [DEBUG] Unscheduled job: schedule_1763549547
+2025-11-19 16:26:40,923 [DEBUG] Schedules saved to file
+2025-11-19 16:26:40,923 [INFO] Deleted schedule: 123
+2025-11-19 16:26:55,867 [DEBUG] Scheduling interval job: 1234 every 1440 minutes
+2025-11-19 16:26:55,867 [INFO] Added job "1234" to job store "default"
+2025-11-19 16:26:55,867 [INFO] Scheduled job: 1234, next run: 2025-11-20 16:26:55.867069+05:00
+2025-11-19 16:26:55,868 [DEBUG] Schedules saved to file
+2025-11-19 16:26:55,868 [INFO] Added schedule: 1234 (interval: 1440)
+2025-11-19 16:26:59,857 [INFO] === Starting scheduled sync: 1234 ===
+2025-11-19 16:26:59,858 [DEBUG] Schedules saved to file
+2025-11-19 16:26:59,859 [DEBUG] Validating environment...
+2025-11-19 16:26:59,859 [DEBUG] Testing S3 connection...
+2025-11-19 16:26:59,928 [INFO] ✓ Bucket access confirmed
+2025-11-19 16:26:59,929 [INFO] S3 connection test successful
+2025-11-19 16:26:59,930 [DEBUG] Scanning existing S3 files...
+2025-11-19 16:26:59,931 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 16:26:59,970 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 16:26:59,970 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 16:26:59,970 [DEBUG] Scanning backup files...
+2025-11-19 16:26:59,971 [INFO] Scanning NFS directory: /mnt/veeam_nfs
+2025-11-19 16:26:59,971 [INFO] Filter: last 7 days
+2025-11-19 16:27:00,312 [INFO] Found 402 files for upload
+2025-11-19 16:27:00,312 [INFO] Skipped 333 files (outside time range)
+2025-11-19 16:27:00,313 [INFO] Skipped 0 files (already in S3)
+2025-11-19 16:27:00,313 [INFO] Total size to upload: 4.5 TB
+2025-11-19 16:27:00,313 [INFO] Top 5 largest files to upload:
+2025-11-19 16:27:00,314 [INFO]     883.6 GB - 2025-11-18 03:24 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-18T000004_7B79.vbk
+2025-11-19 16:27:00,314 [INFO]     867.5 GB - 2025-11-15 06:39 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-15T000015_B2F4.vbk
+2025-11-19 16:27:00,315 [INFO]     296.8 GB - 2025-11-14 03:26 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-14T020005_29E5.vbk
+2025-11-19 16:27:00,315 [INFO]     296.1 GB - 2025-11-16 03:32 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-16T020017_BEAC.vbk
+2025-11-19 16:27:00,316 [INFO]     166.1 GB - 2025-11-14 02:48 - VDC_Petro_Critical02_VMs_Job/EHO DB_Int _192.168.121.42_-FLO8.vm-48536D2025-11-14T020005_40B2.vbk
+2025-11-19 16:27:00,316 [ERROR] Scheduled sync error: 'tuple' object has no attribute 'size'
+2025-11-19 16:27:00,317 [DEBUG] Schedules saved to file
+2025-11-19 16:27:00,317 [INFO] === Scheduled sync finished: 1234 ===

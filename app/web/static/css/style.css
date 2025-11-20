@@ -1,0 +1,440 @@
+body {
+    background-color: #f8f9fa;
+    padding-top: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    margin-bottom: 20px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    font-weight: 600;
+}
+
+.progress {
+    height: 25px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: width 0.5s ease-in-out;
+}
+
+.log-container {
+    height: 400px;
+    overflow-y: auto;
+    background-color: #1e1e1e;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: #d4d4d4;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.log-entry {
+    padding: 4px 8px;
+    border-bottom: 1px solid #2d2d2d;
+    line-height: 1.4;
+}
+
+.log-info {
+    color: #4fc3f7;
+}
+
+.log-error {
+    color: #f44336;
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.log-warning {
+    color: #ffb74d;
+}
+
+.stat-card {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #1976d2;
+}
+
+.stat-card .card-body {
+    padding: 1rem;
+}
+
+.connection-status {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+}
+
+.connected {
+    background-color: #4caf50;
+}
+
+.disconnected {
+    background-color: #f44336;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Custom scrollbar for log container */
+.log-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.log-container::-webkit-scrollbar-track {
+    background: #2d2d2d;
+    border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* Button styles */
+.btn {
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Form styles */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control, .form-select {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-card .stat-value {
+        font-size: 1.4rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn {
+        margin-bottom: 5px;
+    }
+}
+
+/* Detailed stats pre formatting */
+#detailedStats {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-inactive {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.status-warning {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+
+/* ============================================================================
+   SCHEDULER SPECIFIC STYLES
+   ============================================================================ */
+
+/* Schedule cards hover effect */
+.schedule-card {
+    transition: all 0.3s ease;
+}
+
+.schedule-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Progress bar small variant */
+.progress.progress-small {
+    height: 8px;
+}
+
+/* Badge variants for success rates */
+.badge-success-rate {
+    background-color: #28a745;
+}
+
+.badge-warning-rate {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-danger-rate {
+    background-color: #dc3545;
+}
+
+/* History item styles */
+.history-item {
+    border-left: 4px solid #28a745;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.history-item.failed {
+    border-left-color: #dc3545;
+}
+
+.history-item.running {
+    border-left-color: #ffc107;
+}
+
+/* Stats grid for scheduler */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stats-grid .stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.stats-grid .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.stats-grid .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    color: white;
+}
+
+/* Ensure proper spacing in scheduler */
+#schedulerStats .row {
+    margin-left: -10px;
+    margin-right: -10px;
+}
+
+#schedulerStats .stat-card {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* Modal styles */
+.modal-content {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-title {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Form text adjustments */
+.form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+/* Button group spacing */
+.d-flex.gap-2 > * {
+    margin-right: 0.5rem;
+}
+
+.d-flex.gap-2 > *:last-child {
+    margin-right: 0;
+}
+
+/* Card title adjustments */
+.card-title {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Badge adjustments */
+.badge {
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+/* Text color utilities */
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* Ensure proper container fluid behavior */
+.container-fluid {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+/* Table-like responsive behavior */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .stats-grid .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stats-grid .stat-card {
+        padding: 1rem;
+    }
+    
+    .schedule-card:hover {
+        transform: none; /* Disable hover effect on mobile */
+    }
+}
+
+/* Fix for form controls in scheduler */
+#addScheduleForm .row {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+}
+
+#addScheduleForm .row > [class*="col-"] {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+/* Alert notification styles */
+.alert {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Ensure proper z-index for modal */
+.modal {
+    z-index: 1060;
+}
+
+/* Fix for progress bars in cards */
+.card .progress {
+    margin-bottom: 0.5rem;
+}
+
+/* Utility classes for text colors */
+.text-success { color: #28a745 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-primary { color: #007bff !important; }
+
+/* Background color utilities */
+.bg-success { background-color: #28a745 !important; }
+.bg-warning { background-color: #ffc107 !important; }
+.bg-danger { background-color: #dc3545 !important; }
+.bg-secondary { background-color: #6c757d !important; }
+.bg-light { background-color: #f8f9fa !important; }

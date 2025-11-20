@@ -1,0 +1,83 @@
+2025-11-19 14:52:44,120 [INFO] === S3 Upload Manager Web Interface Started ===
+2025-11-19 14:52:46,035 [INFO] Client connected to S3 Upload Manager
+2025-11-19 14:52:47,907 [INFO] Client disconnected
+2025-11-19 14:52:47,950 [INFO] Client connected to S3 Upload Manager
+2025-11-19 14:52:48,087 [INFO] Client connected to S3 Upload Manager
+2025-11-19 14:52:56,041 [ERROR] Bucket backups does not exist
+2025-11-19 14:53:12,130 [INFO] Configuration updated successfully
+2025-11-19 14:53:17,763 [ERROR] Bucket backups does not exist
+2025-11-19 14:54:08,082 [INFO] Configuration updated successfully
+2025-11-19 14:54:10,244 [INFO] ✓ Bucket access confirmed
+2025-11-19 14:54:13,771 [INFO] === Upload Started ===
+2025-11-19 14:54:13,772 [INFO] Environment validation successful
+2025-11-19 14:54:13,797 [INFO] ✓ Bucket access confirmed
+2025-11-19 14:54:13,798 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 14:54:13,798 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 14:54:13,835 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 14:54:13,836 [INFO] Scanning backup files...
+2025-11-19 14:54:13,838 [ERROR] NFS path does not exist: mnt/veeam_nfs
+2025-11-19 14:54:13,839 [INFO] No files to upload. Exiting.
+2025-11-19 14:54:31,570 [INFO] Configuration updated successfully
+2025-11-19 14:54:33,636 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 14:54:33,666 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 14:54:33,671 [INFO] Scanning NFS directory: /mnt/veeam_nfs
+2025-11-19 14:54:33,672 [INFO] Filter: last 7 days
+2025-11-19 14:54:36,265 [INFO] Found 402 files for upload
+2025-11-19 14:54:36,265 [INFO] Skipped 333 files (outside time range)
+2025-11-19 14:54:36,265 [INFO] Skipped 0 files (already in S3)
+2025-11-19 14:54:36,265 [INFO] Total size to upload: 4.5 TB
+2025-11-19 14:54:36,266 [INFO] Top 5 largest files to upload:
+2025-11-19 14:54:36,266 [INFO]     883.6 GB - 2025-11-18 03:24 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-18T000004_7B79.vbk
+2025-11-19 14:54:36,268 [INFO]     867.5 GB - 2025-11-15 06:39 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-15T000015_B2F4.vbk
+2025-11-19 14:54:36,269 [INFO]     296.8 GB - 2025-11-14 03:26 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-14T020005_29E5.vbk
+2025-11-19 14:54:36,269 [INFO]     296.1 GB - 2025-11-16 03:32 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-16T020017_BEAC.vbk
+2025-11-19 14:54:36,269 [INFO]     166.1 GB - 2025-11-14 02:48 - VDC_Petro_Critical02_VMs_Job/EHO DB_Int _192.168.121.42_-FLO8.vm-48536D2025-11-14T020005_40B2.vbk
+2025-11-19 14:54:43,787 [INFO] === Upload Started ===
+2025-11-19 14:54:43,788 [INFO] Environment validation successful
+2025-11-19 14:54:43,815 [INFO] ✓ Bucket access confirmed
+2025-11-19 14:54:43,815 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 14:54:43,816 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 14:54:43,844 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 14:54:43,845 [INFO] Scanning backup files...
+2025-11-19 14:54:43,845 [INFO] Scanning NFS directory: /mnt/veeam_nfs
+2025-11-19 14:54:43,846 [INFO] Filter: last 7 days
+2025-11-19 14:54:43,944 [INFO] Found 402 files for upload
+2025-11-19 14:54:43,944 [INFO] Skipped 333 files (outside time range)
+2025-11-19 14:54:43,944 [INFO] Skipped 0 files (already in S3)
+2025-11-19 14:54:43,945 [INFO] Total size to upload: 4.5 TB
+2025-11-19 14:54:43,945 [INFO] Top 5 largest files to upload:
+2025-11-19 14:54:43,946 [INFO]     883.6 GB - 2025-11-18 03:24 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-18T000004_7B79.vbk
+2025-11-19 14:54:43,946 [INFO]     867.5 GB - 2025-11-15 06:39 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-15T000015_B2F4.vbk
+2025-11-19 14:54:43,946 [INFO]     296.8 GB - 2025-11-14 03:26 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-14T020005_29E5.vbk
+2025-11-19 14:54:43,947 [INFO]     296.1 GB - 2025-11-16 03:32 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-16T020017_BEAC.vbk
+2025-11-19 14:54:43,948 [INFO]     166.1 GB - 2025-11-14 02:48 - VDC_Petro_Critical02_VMs_Job/EHO DB_Int _192.168.121.42_-FLO8.vm-48536D2025-11-14T020005_40B2.vbk
+2025-11-19 14:54:43,948 [INFO] Starting upload of 402 files
+2025-11-19 14:54:43,948 [INFO] Starting upload of 402 files with 4 threads
+2025-11-19 14:54:43,949 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO DODO _192.168.121.47_.urn_vcloud_vapp_a68D2025-11-15T020015_CC57.vib (1.6 MB) - 2025-11-15 06:50 to standard/VDC_Petro_Critical02_VMs_Job/EHO_DODO_192.168.121.47_.urn_vcloud_vapp_a68D2025-11-15T020015_CC57.vib
+2025-11-19 14:54:43,950 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-19T020008_9662.vib (3.6 GB) - 2025-11-19 02:17 to standard/VDC_Petro_Critical02_VMs_Job/EHO_APP_192.168.121.46_-Plwg.vm-48561D2025-11-19T020008_9662.vib
+2025-11-19 14:54:43,951 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO Proc _192.168.121.48_-tdwu.vm-48565D2025-11-15T020015_18C1.vib (3.1 GB) - 2025-11-15 06:46 to standard/VDC_Petro_Critical02_VMs_Job/EHO_Proc_192.168.121.48_-tdwu.vm-48565D2025-11-15T020015_18C1.vib
+2025-11-19 14:54:50,980 [INFO] ✓ Upload complete: standard/VDC_Petro_Critical02_VMs_Job/EHO_DODO_192.168.121.47_.urn_vcloud_vapp_a68D2025-11-15T020015_CC57.vib
+2025-11-19 14:54:50,981 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO DB_Int _192.168.121.42_-FLO8.vm-48536D2025-11-15T020015_B3BF.vib (31.2 GB) - 2025-11-15 06:59 to standard/VDC_Petro_Critical02_VMs_Job/EHO_DB_Int_192.168.121.42_-FLO8.vm-48536D2025-11-15T020015_B3BF.vib
+2025-11-19 14:55:09,714 [INFO] Upload stop requested - stopping all operations
+2025-11-19 14:55:09,715 [INFO] Active thread: MainThread
+2025-11-19 14:55:09,715 [INFO] Active thread: Thread-3 (_service_task)
+2025-11-19 14:55:09,715 [INFO] Active thread: Thread-16 (process_request_thread)
+2025-11-19 14:55:09,716 [INFO] Active thread: Thread-17 (simple_websocket.Base._thread)
+2025-11-19 14:55:09,716 [INFO] Active thread: Thread-19 (writer)
+2025-11-19 14:55:09,716 [INFO] Active thread: Thread-27 (process_request_thread)
+2025-11-19 14:55:09,716 [INFO] Active thread: Thread-28 (simple_websocket.Base._thread)
+2025-11-19 14:55:09,717 [INFO] Active thread: Thread-29 (writer)
+2025-11-19 14:55:09,717 [INFO] Active thread: ThreadPoolExecutor-0_0
+2025-11-19 14:55:09,718 [INFO] Active thread: ThreadPoolExecutor-0_1
+2025-11-19 14:55:09,718 [INFO] Active thread: ThreadPoolExecutor-0_2
+2025-11-19 14:55:09,719 [INFO] Active thread: Thread-92 (_send_ping)
+2025-11-19 14:55:09,719 [INFO] Active thread: Thread-93 (_send_ping)
+2025-11-19 14:55:09,720 [INFO] Active thread: Thread-96
+2025-11-19 14:55:09,720 [INFO] Active thread: Thread-97
+2025-11-19 14:55:09,720 [INFO] Active thread: Thread-98
+2025-11-19 14:55:09,721 [INFO] Active thread: Thread-99
+2025-11-19 14:55:09,721 [INFO] Active thread: Thread-100
+2025-11-19 14:55:09,721 [INFO] Active thread: Thread-101
+2025-11-19 14:55:09,722 [INFO] Active thread: Thread-104
+2025-11-19 14:55:09,723 [INFO] Active thread: Thread-105
+2025-11-19 14:55:09,724 [INFO] Active thread: Thread-106

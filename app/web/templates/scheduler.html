@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduler - S3 Backup Upload Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+            <div>
+                <h1 class="mb-0">Scheduler - S3 Backup Upload Manager</h1>
+                <div class="d-flex align-items-center mt-2">
+                    <span id="schedulerStatus" class="status-indicator status-active">
+                        <i class="fas fa-clock me-1"></i> Scheduler Active
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Main
+                </a>
+                <button class="btn btn-outline-info me-2" id="toggleDebugLogs">
+                    <i class="fas fa-terminal me-1"></i> Debug Logs
+                </button>
+                <button class="btn btn-outline-secondary" id="refreshScheduler">
+                    <i class="fas fa-sync me-1"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Debug Logs Panel (скрыт по умолчанию) -->
+        <div class="card mb-4" id="debugLogsPanel" style="display: none;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-terminal me-2"></i>Debug Logs
+                </h5>
+                <div class="d-flex align-items-center">
+                    <select class="form-select form-select-sm me-2" id="debugLogLevel" style="width: auto;">
+                        <option value="DEBUG">Debug</option>
+                        <option value="INFO" selected>Info</option>
+                        <option value="WARNING">Warning</option>
+                        <option value="ERROR">Error</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-danger" id="clearDebugLogs">
+                        <i class="fas fa-trash me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="log-container p-3" id="debugLogsContainer" style="height: 300px; font-size: 0.8rem;">
+                    <!-- Debug logs will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheduler Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Scheduler Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="schedulerStats">
+                    <!-- Stats will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Schedule Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-plus me-2"></i>Add New Schedule</h5>
+            </div>
+            <div class="card-body">
+                <form id="addScheduleForm">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Schedule Name *</label>
+                                <input type="text" class="form-control" id="scheduleName" required placeholder="Daily Backup Sync">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">Schedule Type *</label>
+                                <select class="form-select" id="scheduleType" required>
+                                    <option value="interval">Interval</option>
+                                    <option value="cron">Cron</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label" id="intervalLabel">Interval *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="scheduleIntervalValue" min="1" value="1">
+                                    <select class="form-select" id="scheduleIntervalUnit" style="max-width: 120px;">
+                                        <option value="minutes">Minutes</option>
+                                        <option value="hours" selected>Hours</option>
+                                        <option value="days">Days</option>
+                                        <option value="weeks">Weeks</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="scheduleEnabled" checked>
+                                    <label class="form-check-label" for="scheduleEnabled">Enabled</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" id="cronSection" style="display: none;">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">Cron Expression *</label>
+                                <input type="text" class="form-control" id="cronExpression" placeholder="0 2 * * *">
+                                <div class="form-text">
+                                    Cron format: minute hour day month dayofweek<br>
+                                    Examples: 
+                                    "0 2 * * *" = daily at 2:00 AM,
+                                    "0 0 * * 0" = weekly on Sunday at midnight,
+                                    "0 0 1 * *" = monthly on 1st day at midnight
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Add Schedule
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Reset Form
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Schedules List -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-tasks me-2"></i>Scheduled Tasks</h5>
+            </div>
+            <div class="card-body">
+                <div id="schedulesList">
+                    <!-- Schedules will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sync History -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i>Sync History</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Filter by Schedule</label>
+                        <select class="form-select" id="historyFilter">
+                            <option value="all">All Schedules</option>
+                            <!-- Schedule filters will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Limit</label>
+                        <select class="form-select" id="historyLimit">
+                            <option value="20">Last 20</option>
+                            <option value="50" selected>Last 50</option>
+                            <option value="100">Last 100</option>
+                            <option value="200">Last 200</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Time Period</label>
+                        <select class="form-select" id="historyPeriod">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="syncHistory">
+                    <!-- History will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Stats Modal -->
+    <div class="modal fade" id="scheduleStatsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule Statistics</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="scheduleStatsContent">
+                    <!-- Stats content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/scheduler.js') }}"></script>
+</body>
+</html>

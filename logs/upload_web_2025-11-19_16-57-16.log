@@ -1,0 +1,25 @@
+2025-11-19 16:57:16,670 [INFO] === S3 Upload Manager Web Interface Started ===
+2025-11-19 16:57:16,670 [INFO] Scheduler started
+2025-11-19 16:57:16,671 [INFO] Added job "1234" to job store "default"
+2025-11-19 16:57:21,958 [INFO] Client connected to S3 Upload Manager
+2025-11-19 16:57:26,650 [INFO] ✓ Bucket access confirmed
+2025-11-19 16:57:26,651 [INFO] Scanning existing files in S3 bucket...
+2025-11-19 16:57:26,685 [INFO] Found 6 existing files in S3 bucket
+2025-11-19 16:57:26,690 [INFO] Scanning NFS directory: /mnt/veeam_nfs
+2025-11-19 16:57:26,690 [INFO] Filter: last 7 days
+2025-11-19 16:57:29,332 [INFO] Found 402 files for upload
+2025-11-19 16:57:29,332 [INFO] Skipped 333 files (outside time range)
+2025-11-19 16:57:29,332 [INFO] Skipped 0 files (already in S3)
+2025-11-19 16:57:29,332 [INFO] Total size to upload: 4.5 TB
+2025-11-19 16:57:29,333 [INFO] Top 5 largest files to upload:
+2025-11-19 16:57:29,333 [INFO]     883.6 GB - 2025-11-18 03:24 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-18T000004_7B79.vbk
+2025-11-19 16:57:29,333 [INFO]     867.5 GB - 2025-11-15 06:39 - VDC_Petro_Standart00_VMs_Job/Prod - Exchange _192.168.120.100_-WTY1.vm-485D2025-11-15T000015_B2F4.vbk
+2025-11-19 16:57:29,334 [INFO]     296.8 GB - 2025-11-14 03:26 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-14T020005_29E5.vbk
+2025-11-19 16:57:29,334 [INFO]     296.1 GB - 2025-11-16 03:32 - VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-16T020017_BEAC.vbk
+2025-11-19 16:57:29,334 [INFO]     166.1 GB - 2025-11-14 02:48 - VDC_Petro_Critical02_VMs_Job/EHO DB_Int _192.168.121.42_-FLO8.vm-48536D2025-11-14T020005_40B2.vbk
+2025-11-19 16:57:29,335 [INFO] Starting upload of 402 files with 4 threads
+2025-11-19 16:57:29,336 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO DODO _192.168.121.47_.urn_vcloud_vapp_a68D2025-11-15T020015_CC57.vib (1.6 MB) - 2025-11-15 06:50 to standard/VDC_Petro_Critical02_VMs_Job/EHO_DODO_192.168.121.47_.urn_vcloud_vapp_a68D2025-11-15T020015_CC57.vib
+2025-11-19 16:57:29,336 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO APP _192.168.121.46_-Plwg.vm-48561D2025-11-19T020008_9662.vib (3.6 GB) - 2025-11-19 02:17 to standard/VDC_Petro_Critical02_VMs_Job/EHO_APP_192.168.121.46_-Plwg.vm-48561D2025-11-19T020008_9662.vib
+2025-11-19 16:57:29,337 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO Proc _192.168.121.48_-tdwu.vm-48565D2025-11-15T020015_18C1.vib (3.1 GB) - 2025-11-15 06:46 to standard/VDC_Petro_Critical02_VMs_Job/EHO_Proc_192.168.121.48_-tdwu.vm-48565D2025-11-15T020015_18C1.vib
+2025-11-19 16:57:32,896 [INFO] ✓ Upload complete: standard/VDC_Petro_Critical02_VMs_Job/EHO_DODO_192.168.121.47_.urn_vcloud_vapp_a68D2025-11-15T020015_CC57.vib
+2025-11-19 16:57:32,897 [INFO] Uploading VDC_Petro_Critical02_VMs_Job/EHO DB_Int _192.168.121.42_-FLO8.vm-48536D2025-11-15T020015_B3BF.vib (31.2 GB) - 2025-11-15 06:59 to standard/VDC_Petro_Critical02_VMs_Job/EHO_DB_Int_192.168.121.42_-FLO8.vm-48536D2025-11-15T020015_B3BF.vib
