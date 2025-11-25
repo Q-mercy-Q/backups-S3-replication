@@ -1,45 +1,57 @@
 #!/usr/bin/env python3
 """
-Точка входа для CLI версии S3 Backup Manager
+Точка входа для S3 Backup Manager
 """
+
+import os
 import logging
-from app.utils.logger import setup_logging
-from app.services.scheduler_service import scheduler_service
-from app.utils.config import validate_environment
+from app.web.app import create_app_with_socketio
+
+def setup_logging():
+    """Настройка логирования для Docker"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),  # Вывод в stdout для Docker
+            logging.FileHandler('logs/app.log')  # Файл логов
+        ]
+    )
 
 def main():
-    """Основная функция CLI"""
+    """Основная функция запуска"""
     setup_logging()
+    
+    # Создаем необходимые директории
+    os.makedirs('data', exist_ok=True)
+    os.makedirs('logs', exist_ok=True)
+    
     logger = logging.getLogger(__name__)
     
     try:
-        logger.info("=== S3 Backup Manager CLI Started ===")
+        logger.info("Starting S3 Backup Manager Web Application...")
         
-        # Валидация окружения
-        validate_environment()
-        logger.info("Environment validation successful")
+        # Создаем приложение с SocketIO
+        app, socketio = create_app_with_socketio()
         
-        # Запускаем планировщик
-        scheduler_service.start()
-        logger.info("Scheduler service started")
+        # Запускаем приложение
+        host = os.getenv('HOST', '0.0.0.0')
+        port = int(os.getenv('PORT', 5000))
+        debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
         
-        print("\nS3 Backup Manager is running in CLI mode.")
-        print("Press Ctrl+C to stop the application.\n")
+        logger.info(f"Starting web server on {host}:{port} (debug: {debug})")
         
-        # Бесконечный цикл для CLI
-        try:
-            while True:
-                import time
-                time.sleep(1)
-        except KeyboardInterrupt:
-            logger.info("Shutting down...")
-            scheduler_service.shutdown()
-            
+        socketio.run(
+            app,
+            host=host,
+            port=port,
+            debug=debug,
+            allow_unsafe_werkzeug=True
+        )
+        
     except Exception as e:
-        logger.error(f"Application error: {e}")
-        return 1
-    
-    return 0
+        logger.error(f"Failed to start application: {e}")
+        raise
 
 if __name__ == '__main__':
-    exit(main())
+    main()

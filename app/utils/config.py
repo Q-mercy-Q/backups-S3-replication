@@ -17,12 +17,12 @@ def _ensure_config_dir():
     """Создает директорию для конфигурационного файла если не существует"""
     try:
         os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-        logger.debug(f"Ensured directory exists for: {CONFIG_FILE}")
+        logger.info(f"Ensured directory exists for: {CONFIG_FILE}")
     except Exception as e:
         logger.error(f"Error creating config directory: {e}")
 
 def _load_config_from_file() -> Dict[str, Any]:
-    """Загружает конфигурацию из файла"""
+    """Загружает конфигурацию из файла - ВСЕГДА ЧИТАЕТ ИЗ ФАЙЛА"""
     try:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -42,12 +42,11 @@ def _save_config_to_file(config: Dict[str, Any]):
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
         logger.info(f"Configuration saved to file: {CONFIG_FILE}")
-        logger.debug(f"Saved config content: {config}")
     except Exception as e:
         logger.error(f"Error saving config to file {CONFIG_FILE}: {e}")
 
 def get_config() -> Dict[str, Any]:
-    """Получение конфигурации из переменных окружения и файла"""
+    """Получение конфигурации - ВСЕГДА АКТУАЛЬНЫЕ ДАННЫЕ"""
     # Базовые значения по умолчанию
     default_config = {
         'NFS_PATH': '/mnt/backups',
@@ -64,25 +63,25 @@ def get_config() -> Dict[str, Any]:
         'RETRY_DELAY': '5'
     }
     
-    # Загружаем конфигурацию из файла
+    # Загружаем конфигурацию из файла (ВЫСШИЙ ПРИОРИТЕТ)
     file_config = _load_config_from_file()
     
     # Объединяем: файл > переменные окружения > значения по умолчанию
     config = default_config.copy()
     
-    # Обновляем из переменных окружения
+    # Обновляем из переменных окружения (НИЗШИЙ ПРИОРИТЕТ)
     for key in default_config.keys():
         env_value = os.getenv(key)
         if env_value is not None:
             config[key] = env_value
     
-    # Обновляем из файла (имеет наивысший приоритет)
+    # Обновляем из файла (НАИВЫСШИЙ ПРИОРИТЕТ - перезаписывает env)
     config.update(file_config)
     
-    logger.debug(f"Final merged config: {config}")
+    logger.debug(f"Config loaded - file priority: {list(file_config.keys())}")
     return config
 
-# Геттеры для конкретных настроек
+# Геттеры для конкретных настроек - ВСЕГДА ВЫЗЫВАЮТ get_config()
 def get_nfs_path() -> str:
     return get_config()['NFS_PATH']
 
@@ -140,11 +139,10 @@ def validate_environment() -> bool:
 
 def update_config(new_config: Dict[str, Any]) -> None:
     """Обновление конфигурации (для веб-интерфейса)"""
-    logger.info(f"Updating configuration with new data: {new_config}")
+    logger.info(f"Updating configuration with keys: {list(new_config.keys())}")
     
-    # Загружаем текущую конфигурацию
+    # Загружаем текущую конфигурацию из файла
     current_config = _load_config_from_file()
-    logger.debug(f"Current config before update: {current_config}")
     
     # Обновляем только переданные поля
     updated_keys = []
@@ -153,15 +151,10 @@ def update_config(new_config: Dict[str, Any]) -> None:
             current_config[key] = str(value)
             updated_keys.append(key)
     
-    logger.info(f"Updated keys: {updated_keys}")
-    logger.debug(f"Config after update: {current_config}")
+    logger.info(f"Updated config keys: {updated_keys}")
     
     # Сохраняем в файл
     _save_config_to_file(current_config)
     
-    # Также обновляем переменные окружения для текущей сессии
-    for key, value in new_config.items():
-        if value is not None and value != '':
-            os.environ[key] = str(value)
-    
-    logger.info("Configuration update completed successfully")
+    # НЕ обновляем переменные окружения - чтобы файл конфигурации имел приоритет
+    logger.info("Configuration update completed - FILE configuration has priority")

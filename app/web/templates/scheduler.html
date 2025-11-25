@@ -66,6 +66,12 @@
             <div class="card-body">
                 <div class="row" id="schedulerStats">
                     <!-- Stats will be loaded here -->
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Loading statistics...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -133,7 +139,7 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="submitSchedule">
                             <i class="fas fa-save me-2"></i>Add Schedule
                         </button>
                         <button type="reset" class="btn btn-outline-secondary">
@@ -151,7 +157,12 @@
             </div>
             <div class="card-body">
                 <div id="schedulesList">
-                    <!-- Schedules will be loaded here -->
+                    <div class="text-center text-muted py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading schedules...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -190,7 +201,12 @@
                     </div>
                 </div>
                 <div id="syncHistory">
-                    <!-- History will be loaded here -->
+                    <div class="text-center text-muted py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading history...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -216,6 +232,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="{{ url_for('static', filename='js/scheduler.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/scheduler-main.js') }}"></script>
 </body>
 </html>

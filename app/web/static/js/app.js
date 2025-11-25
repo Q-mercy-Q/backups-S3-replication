@@ -186,8 +186,10 @@ function getCurrentConfig() {
         BACKUP_DAYS: parseInt(document.getElementById('backupDays').value) || 7,
         MAX_THREADS: parseInt(document.getElementById('maxThreads').value) || 4,
         STORAGE_CLASS: document.getElementById('storageClass').value,
-        ENABLE_TAPE_STORAGE: document.getElementById('enableTapeStorage').checked
+        ENABLE_TAPE_STORAGE: document.getElementById('enableTapeStorage').checked ? 'true' : 'false'
     };
+    
+    console.log('Collected config:', config);
     
     // Validation
     if (!config.NFS_PATH) {
@@ -279,13 +281,17 @@ function setupEventListeners() {
     document.getElementById('saveConfig').addEventListener('click', async () => {
         try {
             const config = getCurrentConfig();
+            console.log('Saving config:', config);
+            
             const result = await apiCall('/api/config', {
                 method: 'POST',
                 body: config
             });
 
+            console.log('Save config result:', result);
             handleApiResult(result, 'Save config');
         } catch (error) {
+            console.error('Save config error:', error);
             showNotification(error.message, 'error');
         }
     });
@@ -331,6 +337,8 @@ function setupEventListeners() {
 
 // Handle API results
 function handleApiResult(result, action) {
+    console.log(`API result for ${action}:`, result);
+    
     if (result.status === 'success') {
         showNotification(result.message, 'success');
         addLogEntry({ level: 'info', message: result.message, timestamp: new Date().toLocaleTimeString() });
@@ -417,6 +425,7 @@ async function loadInitialConfiguration() {
     try {
         const response = await fetch('/api/config');
         const config = await response.json();
+        console.log('Loaded initial config:', config);
         updateFormWithConfig(config);
     } catch (error) {
         console.error('Error loading configuration:', error);
@@ -426,6 +435,8 @@ async function loadInitialConfiguration() {
 
 // Update form with configuration data
 function updateFormWithConfig(config) {
+    console.log('Updating form with config:', config);
+    
     document.getElementById('nfsPath').value = config.NFS_PATH || '';
     document.getElementById('s3Endpoint').value = config.S3_ENDPOINT || '';
     document.getElementById('s3Bucket').value = config.S3_BUCKET || '';
