@@ -1,11 +1,11 @@
 {
   "NFS_PATH": "/mnt/veeam_nfs",
-  "S3_ENDPOINT": "172.20.129.2",
+  "S3_ENDPOINT": "172.20.129.1",
   "S3_BUCKET": "petro-replication-cold-storage",
-  "BACKUP_DAYS": 7,
-  "MAX_THREADS": 4,
+  "BACKUP_DAYS": "7",
+  "MAX_THREADS": "4",
   "STORAGE_CLASS": "GLACIER",
-  "ENABLE_TAPE_STORAGE": false,
+  "ENABLE_TAPE_STORAGE": "true",
   "S3_ACCESS_KEY": "AK06PMXAFAAXQSEO087Y",
   "S3_SECRET_KEY": "UwHPdFUWH5RFZ74NoHkTDCu6y3i3sYNhLFaGIbEB"
 }

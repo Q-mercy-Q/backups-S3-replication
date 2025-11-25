@@ -50,8 +50,8 @@ def get_file_info(file_path: str, base_path: str) -> Optional[Tuple]:
         logging.warning(f"Could not get file info for {file_path}: {e}")
         return None
 
-def _format_size(size_bytes: int) -> str:
-    """Форматирование размера в читаемый вид (внутренняя функция)"""
+def format_size(size_bytes: int) -> str:
+    """Форматирование размера в читаемый вид"""
     if not size_bytes:
         return "0 B"
     

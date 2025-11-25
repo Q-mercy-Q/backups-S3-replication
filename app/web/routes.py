@@ -2,6 +2,9 @@ from flask import jsonify, request, render_template
 import time
 import humanize
 import os
+import json
+import logging
+from datetime import datetime, timedelta
 
 from app.utils.config import get_config, update_config, upload_stats
 from app.services.file_scanner import scan_backup_files
@@ -9,6 +12,9 @@ from app.services.s3_client import test_connection, get_existing_s3_files
 from app.services.upload_manager import upload_files
 from app.services.scheduler_service import scheduler_service
 from app.web.background_tasks import run_upload, scan_files_with_config, get_stats_data, get_detailed_stats
+
+# Глобальная переменная для отслеживания запуска планировщика
+_scheduler_started = False
 
 def init_routes(app):
     """Инициализация маршрутов"""
@@ -23,6 +29,22 @@ def init_routes(app):
         """Страница планировщика"""
         return render_template('scheduler.html', config=get_config())
     
+    # Запуск планировщика при первом запросе
+    @app.before_request
+    def start_scheduler():
+        """Запуск планировщика при первом запросе"""
+        global _scheduler_started
+        if not _scheduler_started:
+            try:
+                scheduler_service.start()
+                app.logger.info("Scheduler service started")
+                _scheduler_started = True
+            except Exception as e:
+                app.logger.error(f"Failed to start scheduler service: {e}")
+    
+    # Остальной код routes.py остается без изменений...
+    # [весь остальной код из предыдущей полной версии routes.py]
+    
     # API для конфигурации
     @app.route('/api/config', methods=['GET', 'POST'])
     def api_config():
@@ -30,6 +52,8 @@ def init_routes(app):
         if request.method == 'POST':
             try:
                 config_data = request.get_json()
+                app.logger.info(f"Received config update: {list(config_data.keys()) if config_data else 'No data'}")
+                
                 if not config_data:
                     return jsonify({'status': 'error', 'message': 'No JSON data provided'})
                 
@@ -58,7 +82,7 @@ def init_routes(app):
                 update_config(config_data)
                 app.logger.info("Configuration updated successfully")
                 
-                # Возвращаем обновленную конфигурацию
+                # Возвращаем обновленную конфигурацию (всегда из get_config())
                 return jsonify({
                     'status': 'success', 
                     'message': 'Configuration updated successfully',
@@ -69,6 +93,7 @@ def init_routes(app):
                 app.logger.error(f"Error updating configuration: {e}")
                 return jsonify({'status': 'error', 'message': f'Error updating configuration: {e}'})
         else:
+            # GET request - возвращаем текущую конфигурацию через get_config()
             return jsonify(get_config())
     
     # API для загрузки файлов
@@ -77,7 +102,6 @@ def init_routes(app):
         """API для запуска загрузки"""
         from app.web.background_tasks import upload_thread, stop_event
         
-        # Используем атрибуты объекта
         if upload_stats.is_running:
             return jsonify({'status': 'error', 'message': 'Upload already in progress'})
         
@@ -89,7 +113,7 @@ def init_routes(app):
             except Exception as e:
                 return jsonify({'status': 'error', 'message': f'Invalid configuration: {e}'})
         
-        # Проверяем наличие обязательных полей для S3
+        # Проверяем наличие обязательных полей для S3 через get_config()
         current_config = get_config()
         s3_required = ['S3_ACCESS_KEY', 'S3_SECRET_KEY']
         missing_s3_fields = [field for field in s3_required if not current_config.get(field)]
@@ -115,7 +139,6 @@ def init_routes(app):
         """API для остановки загрузки"""
         from app.web.background_tasks import stop_event
         
-        # Используем атрибуты объекта
         if not upload_stats.is_running:
             return jsonify({'status': 'error', 'message': 'No upload in progress'})
         
@@ -137,7 +160,7 @@ def init_routes(app):
             if config_data:
                 update_config(config_data)
             
-            # Проверяем наличие обязательных полей для S3
+            # Проверяем наличие обязательных полей для S3 через get_config()
             current_config = get_config()
             s3_required = ['S3_ACCESS_KEY', 'S3_SECRET_KEY']
             missing_s3_fields = [field for field in s3_required if not current_config.get(field)]
@@ -167,9 +190,7 @@ def init_routes(app):
                 
             files = scan_files_with_config()
             
-            # Исправлено: проверяем, что files не None
             if files is not None and len(files) > 0:
-                # Используем атрибуты объекта
                 return jsonify({
                     'status': 'success', 
                     'message': f'Found {len(files)} files for upload',
@@ -179,7 +200,6 @@ def init_routes(app):
                     'total_size': humanize.naturalsize(upload_stats.total_bytes)
                 })
             else:
-                # Используем атрибуты объекта
                 return jsonify({
                     'status': 'warning', 
                     'message': 'No files found for upload',
@@ -195,51 +215,64 @@ def init_routes(app):
         """API для получения статистики"""
         return jsonify(get_stats_data())
     
-    # API для планировщика
+    # API для планировщика - Статистика планировщика
+    @app.route('/api/scheduler/stats')
+    def api_scheduler_stats():
+        """API для получения статистики планировщика"""
+        try:
+            stats = {
+                'total_schedules': len(scheduler_service.schedules),
+                'enabled_schedules': len([s for s in scheduler_service.schedules.values() if s.enabled]),
+                'total_runs': len(scheduler_service.sync_history),
+                'successful_runs': len([h for h in scheduler_service.sync_history if h.status.value == 'completed']),
+                'failed_runs': len([h for h in scheduler_service.sync_history if h.status.value == 'failed']),
+                'total_files_uploaded': sum(h.files_uploaded for h in scheduler_service.sync_history if hasattr(h, 'files_uploaded')),
+                'total_data_uploaded': humanize.naturalsize(sum(h.uploaded_size for h in scheduler_service.sync_history if hasattr(h, 'uploaded_size'))),
+            }
+            
+            # Вычисляем процент успешных запусков
+            if stats['total_runs'] > 0:
+                stats['success_rate'] = (stats['successful_runs'] / stats['total_runs']) * 100
+            else:
+                stats['success_rate'] = 0
+                
+            return jsonify(stats)
+            
+        except Exception as e:
+            app.logger.error(f"Error getting scheduler stats: {e}")
+            return jsonify({'status': 'error', 'message': str(e)})
+    
+    # API для планировщика - Расписания
     @app.route('/api/scheduler/schedules', methods=['GET', 'POST'])
     def api_scheduler_schedules():
         """API для работы с расписаниями"""
-        if request.method == 'GET':
-            schedules = scheduler_service.schedules
-            # Добавляем статистику для каждого расписания
-            for schedule_id in schedules:
-                stats = scheduler_service.get_schedule_stats(schedule_id)
-                schedules[schedule_id]['stats'] = stats
-            return jsonify(schedules)
-        else:  # POST
-            try:
+        try:
+            if request.method == 'GET':
+                # Возвращаем все расписания со статистикой
+                schedules_with_stats = {}
+                for schedule_id, schedule in scheduler_service.schedules.items():
+                    schedule_dict = schedule.to_dict()
+                    schedule_dict['stats'] = scheduler_service.get_schedule_stats(schedule_id)
+                    schedules_with_stats[schedule_id] = schedule_dict
+                    
+                return jsonify(schedules_with_stats)
+                
+            elif request.method == 'POST':
+                # Создание нового расписания
                 data = request.get_json()
                 if not data:
-                    return jsonify({'status': 'error', 'message': 'No data provided'})
+                    return jsonify({'status': 'error', 'message': 'No JSON data provided'})
+                    
+                required_fields = ['name', 'type', 'interval']
+                for field in required_fields:
+                    if field not in data:
+                        return jsonify({'status': 'error', 'message': f'Missing required field: {field}'})
                 
-                schedule_id = data.get('id', f"schedule_{int(time.time())}")
+                # Генерируем ID для нового расписания
+                import uuid
+                schedule_id = f"schedule_{uuid.uuid4().hex[:8]}"
                 
-                # Для interval расписаний конвертируем в минуты
-                if data.get('type') == 'interval':
-                    # Предполагаем, что данные приходят в формате {value: число, unit: строка}
-                    if isinstance(data.get('interval'), dict):
-                        value = data['interval'].get('value', 1)
-                        unit = data['interval'].get('unit', 'hours')
-                        # Конвертируем в минуты
-                        if unit == 'minutes':
-                            interval_minutes = value
-                        elif unit == 'hours':
-                            interval_minutes = value * 60
-                        elif unit == 'days':
-                            interval_minutes = value * 24 * 60
-                        elif unit == 'weeks':
-                            interval_minutes = value * 7 * 24 * 60
-                        else:
-                            interval_minutes = value
-                        data['interval'] = str(interval_minutes)
-                    # Если interval уже строка, оставляем как есть
-                    elif isinstance(data.get('interval'), str):
-                        # Убедимся, что это число
-                        try:
-                            int(data['interval'])
-                        except ValueError:
-                            return jsonify({'status': 'error', 'message': 'Invalid interval format'})
-                
+                # Добавляем расписание
                 success = scheduler_service.add_schedule(
                     schedule_id=schedule_id,
                     name=data['name'],
@@ -249,113 +282,154 @@ def init_routes(app):
                 )
                 
                 if success:
-                    return jsonify({'status': 'success', 'message': 'Schedule added'})
+                    return jsonify({'status': 'success', 'message': 'Schedule added successfully'})
                 else:
                     return jsonify({'status': 'error', 'message': 'Failed to add schedule'})
                     
-            except Exception as e:
-                return jsonify({'status': 'error', 'message': str(e)})
+        except Exception as e:
+            app.logger.error(f"Error in scheduler schedules API: {e}")
+            return jsonify({'status': 'error', 'message': str(e)})
     
+    # API для планировщика - Конкретное расписание
     @app.route('/api/scheduler/schedules/<schedule_id>', methods=['PUT', 'DELETE'])
     def api_scheduler_schedule(schedule_id):
-        """API для обновления/удаления расписания"""
-        if request.method == 'PUT':
-            try:
+        """API для работы с конкретным расписанием"""
+        try:
+            if request.method == 'PUT':
+                # Обновление расписания
                 data = request.get_json()
                 if not data:
-                    return jsonify({'status': 'error', 'message': 'No data provided'})
+                    return jsonify({'status': 'error', 'message': 'No JSON data provided'})
                     
                 success = scheduler_service.update_schedule(schedule_id, **data)
                 if success:
-                    return jsonify({'status': 'success', 'message': 'Schedule updated'})
+                    return jsonify({'status': 'success', 'message': 'Schedule updated successfully'})
+                else:
+                    return jsonify({'status': 'error', 'message': 'Schedule not found or update failed'})
+                    
+            elif request.method == 'DELETE':
+                # Удаление расписания
+                success = scheduler_service.delete_schedule(schedule_id)
+                if success:
+                    return jsonify({'status': 'success', 'message': 'Schedule deleted successfully'})
                 else:
                     return jsonify({'status': 'error', 'message': 'Schedule not found'})
-            except Exception as e:
-                return jsonify({'status': 'error', 'message': str(e)})
-        else:  # DELETE
-            success = scheduler_service.delete_schedule(schedule_id)
-            if success:
-                return jsonify({'status': 'success', 'message': 'Schedule deleted'})
-            else:
-                return jsonify({'status': 'error', 'message': 'Schedule not found'})
-    
-    @app.route('/api/scheduler/history')
-    def api_scheduler_history():
-        """API для получения истории синхронизаций с фильтрами"""
-        try:
-            limit = int(request.args.get('limit', 50))
-            schedule_filter = request.args.get('schedule', None)
-            period = request.args.get('period', 'all')
-            
-            history = scheduler_service.get_sync_history(limit, schedule_filter, period)
-            return jsonify(history)
+                    
         except Exception as e:
+            app.logger.error(f"Error in scheduler schedule API: {e}")
             return jsonify({'status': 'error', 'message': str(e)})
     
+    # API для планировщика - Запуск расписания вручную
     @app.route('/api/scheduler/run/<schedule_id>', methods=['POST'])
     def api_scheduler_run(schedule_id):
-        """API для ручного запуска расписания"""
+        """API для запуска расписания вручную"""
         try:
-            if schedule_id in scheduler_service.schedules:
-                schedule = scheduler_service.schedules[schedule_id]
-                # Запускаем в отдельном потоке
-                import threading
-                thread = threading.Thread(
-                    target=scheduler_service.run_scheduled_sync,
-                    args=(schedule,),
-                    daemon=True
-                )
-                thread.start()
-                return jsonify({'status': 'success', 'message': 'Schedule started manually'})
-            else:
+            if schedule_id not in scheduler_service.schedules:
                 return jsonify({'status': 'error', 'message': 'Schedule not found'})
+                
+            # Запускаем в отдельном потоке чтобы не блокировать HTTP запрос
+            import threading
+            schedule = scheduler_service.schedules[schedule_id]
+            
+            def run_schedule_async():
+                try:
+                    scheduler_service.run_scheduled_sync(schedule)
+                except Exception as e:
+                    app.logger.error(f"Error running schedule {schedule_id}: {e}")
+            
+            thread = threading.Thread(target=run_schedule_async, daemon=True)
+            thread.start()
+            
+            return jsonify({'status': 'success', 'message': 'Schedule started manually'})
+            
         except Exception as e:
+            app.logger.error(f"Error running schedule: {e}")
             return jsonify({'status': 'error', 'message': str(e)})
     
-    @app.route('/api/scheduler/stats')
-    def api_scheduler_stats():
-        """API для получения общей статистики планировщика"""
+    # API для планировщика - История синхронизаций
+    @app.route('/api/scheduler/history')
+    def api_scheduler_history():
+        """API для получения истории синхронизаций"""
         try:
-            total_schedules = len(scheduler_service.schedules)
-            enabled_schedules = len([s for s in scheduler_service.schedules.values() if s.get('enabled', True)])
+            # Получаем параметры фильтрации
+            limit = request.args.get('limit', 50, type=int)
+            schedule_filter = request.args.get('schedule', 'all')
+            period = request.args.get('period', 'all')
             
-            total_runs = len(scheduler_service.sync_history)
-            successful_runs = len([h for h in scheduler_service.sync_history if h['status'] == 'completed'])
-            failed_runs = len([h for h in scheduler_service.sync_history if h['status'] == 'failed'])
+            # Получаем отфильтрованную историю
+            history = scheduler_service.get_sync_history(
+                limit=limit,
+                schedule_id=schedule_filter if schedule_filter != 'all' else None,
+                period=period
+            )
             
-            total_files = sum(h.get('files_uploaded', 0) for h in scheduler_service.sync_history)
-            total_data = sum(h.get('uploaded_size', 0) for h in scheduler_service.sync_history)
+            # Конвертируем в словари
+            history_dicts = [h.to_dict() for h in history]
             
-            stats = {
-                'total_schedules': total_schedules,
-                'enabled_schedules': enabled_schedules,
-                'disabled_schedules': total_schedules - enabled_schedules,
-                'total_runs': total_runs,
-                'successful_runs': successful_runs,
-                'failed_runs': failed_runs,
-                'success_rate': (successful_runs / total_runs * 100) if total_runs > 0 else 0,
-                'total_files_uploaded': total_files,
-                'total_data_uploaded': humanize.naturalsize(total_data),
-                'last_sync': scheduler_service.sync_history[-1] if scheduler_service.sync_history else None
-            }
+            return jsonify(history_dicts)
             
-            return jsonify(stats)
         except Exception as e:
+            app.logger.error(f"Error getting scheduler history: {e}")
             return jsonify({'status': 'error', 'message': str(e)})
     
-    # API для отладочных логов
+    # API для планировщика - Отладочные логи
     @app.route('/api/scheduler/debug_logs', methods=['GET', 'DELETE'])
     def api_scheduler_debug_logs():
         """API для работы с отладочными логами"""
-        if request.method == 'DELETE':
-            success = scheduler_service.clear_debug_logs()
-            if success:
-                return jsonify({'status': 'success', 'message': 'Debug logs cleared'})
-            else:
-                return jsonify({'status': 'error', 'message': 'Failed to clear debug logs'})
-        else:
-            # GET
-            level = request.args.get('level', 'INFO')
-            limit = int(request.args.get('limit', 100))
-            logs = scheduler_service.get_debug_logs(level, limit)
-            return jsonify({'status': 'success', 'logs': logs})
+        try:
+            if request.method == 'GET':
+                level = request.args.get('level', 'INFO')
+                limit = request.args.get('limit', 100, type=int)
+                
+                logs = scheduler_service.get_debug_logs(level=level, limit=limit)
+                return jsonify({'status': 'success', 'logs': logs})
+                
+            elif request.method == 'DELETE':
+                success = scheduler_service.clear_debug_logs()
+                if success:
+                    return jsonify({'status': 'success', 'message': 'Debug logs cleared'})
+                else:
+                    return jsonify({'status': 'error', 'message': 'Failed to clear debug logs'})
+                    
+        except Exception as e:
+            app.logger.error(f"Error in debug logs API: {e}")
+            return jsonify({'status': 'error', 'message': str(e)})
+    
+    # API для проверки здоровья
+    @app.route('/api/health')
+    def api_health():
+        """API для проверки состояния приложения"""
+        try:
+            health_info = {
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'version': '1.0.0',
+                'services': {
+                    'scheduler': 'running' if scheduler_service.job_scheduler.scheduler.running else 'stopped',
+                    'upload_manager': 'running' if upload_stats.is_running else 'idle'
+                }
+            }
+            
+            # Проверяем доступность S3
+            try:
+                s3_accessible = test_connection()
+                health_info['services']['s3'] = 'connected' if s3_accessible else 'disconnected'
+            except Exception as e:
+                health_info['services']['s3'] = f'error: {str(e)}'
+            
+            return jsonify(health_info)
+            
+        except Exception as e:
+            app.logger.error(f"Health check failed: {e}")
+            return jsonify({'status': 'error', 'message': str(e)})
+    
+    # Обработчик ошибок 404
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({'status': 'error', 'message': 'Endpoint not found'}), 404
+    
+    # Обработчик ошибок 500
+    @app.errorhandler(500)
+    def internal_error(error):
+        app.logger.error(f"Internal server error: {error}")
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500

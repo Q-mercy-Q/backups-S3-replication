@@ -35,17 +35,10 @@ def run_upload():
     global upload_thread
     
     try:
-        # Инициализация статистики - используем атрибуты объекта вместо словаря
-        upload_stats.total_files = 0
-        upload_stats.successful = 0
-        upload_stats.failed = 0
-        upload_stats.total_bytes = 0
-        upload_stats.uploaded_bytes = 0
+        # ИСПРАВЛЕНО: правильная инициализация объекта
+        upload_stats.reset()
         upload_stats.start_time = time.time()
-        upload_stats.file_start_times = {}
         upload_stats.is_running = True
-        upload_stats.skipped_existing = 0
-        upload_stats.skipped_time = 0
         
         logging.info("=== Upload Started ===")
         
@@ -119,9 +112,9 @@ def send_stats_update():
         logging.error(f"Error sending stats update: {e}")
 
 def get_stats_data():
-    """Получение данных статистики для веб-интерфейса"""
-    # Используем атрибуты объекта вместо словаря
-    if not upload_stats.start_time or upload_stats.total_files == 0:
+    """Получение данных статистики для веб-интерфейс"""
+    # ИСПРАВЛЕНО: правильное использование атрибутов объекта
+    if upload_stats.start_time == 0.0 or upload_stats.total_files == 0:
         return {
             'overall_progress': 0,
             'current_file_progress': 0,
@@ -176,8 +169,8 @@ def get_stats_data():
 
 def get_detailed_stats():
     """Получение детальной статистики"""
-    # Используем атрибуты объекта вместо словаря
-    if not upload_stats.start_time or upload_stats.total_files == 0:
+    # ИСПРАВЛЕНО: правильное использование атрибутов объекта
+    if upload_stats.start_time == 0.0 or upload_stats.total_files == 0:
         return "No active upload"
         
     elapsed_time = time.time() - upload_stats.start_time

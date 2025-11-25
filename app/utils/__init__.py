@@ -11,7 +11,8 @@ from app.utils.config import (
 from app.utils.schedule_storage import ScheduleStorage
 from app.utils.debug_logger import DebugLogger
 from app.utils.file_utils import (
-    normalize_s3_key, get_file_modification_time, is_file_in_time_range, get_file_info
+    normalize_s3_key, get_file_modification_time, is_file_in_time_range, get_file_info,
+    format_size
 )
 from app.utils.logger import setup_logging
 from app.utils.stats_monitor import start_stats_monitor, stop_stats_monitor, print_final_statistics, get_detailed_stats
@@ -47,6 +48,7 @@ __all__ = [
     'get_file_modification_time',
     'is_file_in_time_range',
     'get_file_info',
+    'format_size',
 
     # Statistics
     'start_stats_monitor',

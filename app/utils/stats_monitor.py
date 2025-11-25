@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Dict, Any
 
 from app.utils.config import upload_stats
+from app.utils.file_utils import format_size
 
 # Глобальная переменная для остановки мониторинга
 _stats_monitor_running = False
@@ -46,8 +47,8 @@ def print_final_statistics():
     """Вывод финальной статистики"""
     logger = logging.getLogger(__name__)
     
-    # ИСПРАВЛЕНО: используем атрибуты объекта
-    if not upload_stats.start_time:
+    # ИСПРАВЛЕНО: правильная проверка атрибута объекта
+    if upload_stats.start_time == 0.0:
         logger.info("No upload statistics available")
         return
     
@@ -63,8 +64,7 @@ def print_final_statistics():
     
     if elapsed_time > 0:
         bytes_per_second = upload_stats.uploaded_bytes / elapsed_time
-        from app.utils.file_utils import _format_size
-        logger.info(f"Upload speed: {_format_size(bytes_per_second)}/s")
+        logger.info(f"Upload speed: {format_size(bytes_per_second)}/s")
         logger.info(f"Total duration: {_format_duration(elapsed_time)}")
     
     if processed_files > 0:
@@ -86,8 +86,8 @@ def _format_duration(seconds: float) -> str:
 
 def get_detailed_stats() -> Dict[str, Any]:
     """Получение детальной статистики для отображения"""
-    # ИСПРАВЛЕНО: используем атрибуты объекта
-    if not upload_stats.start_time or upload_stats.total_files == 0:
+    # ИСПРАВЛЕНО: правильная проверка атрибута объекта
+    if upload_stats.start_time == 0.0 or upload_stats.total_files == 0:
         return {"message": "No active upload"}
     
     elapsed_time = time.time() - upload_stats.start_time
@@ -99,8 +99,6 @@ def get_detailed_stats() -> Dict[str, Any]:
         
     bytes_per_second = upload_stats.uploaded_bytes / elapsed_time if elapsed_time > 0 else 0
     
-    from app.utils.file_utils import _format_size
-    
     return {
         'overall_progress': progress_percent,
         'files_processed': processed_files,
@@ -109,9 +107,9 @@ def get_detailed_stats() -> Dict[str, Any]:
         'failed': upload_stats.failed,
         'skipped_existing': upload_stats.skipped_existing,
         'skipped_time': upload_stats.skipped_time,
-        'total_size': _format_size(upload_stats.total_bytes),
-        'uploaded_size': _format_size(upload_stats.uploaded_bytes),
-        'upload_speed': f"{_format_size(bytes_per_second)}/s",
+        'total_size': format_size(upload_stats.total_bytes),
+        'uploaded_size': format_size(upload_stats.uploaded_bytes),
+        'upload_speed': f"{format_size(bytes_per_second)}/s",
         'elapsed_time': _format_duration(elapsed_time),
         'start_time': datetime.fromtimestamp(upload_stats.start_time).strftime('%Y-%m-%d %H:%M:%S') if upload_stats.start_time else 'N/A'
     }

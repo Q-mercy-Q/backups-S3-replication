@@ -18,16 +18,20 @@ class FileScanner:
         if existing_s3_files is None:
             existing_s3_files = set()
         
+        # ВСЕГДА получаем актуальные значения из конфигурации
         nfs_path = get_nfs_path()
         ext_tag_map = get_ext_tag_map()
         backup_days = get_backup_days()
         
+        # Логируем используемую конфигурацию
+        self.logger.info(f"🔧 FileScanner config - NFS_PATH: {nfs_path}, BACKUP_DAYS: {backup_days}")
+        
         if not os.path.exists(nfs_path):
-            self.logger.error(f"NFS path does not exist: {nfs_path}")
+            self.logger.error(f" NFS path does not exist: {nfs_path}")
             return []
         
-        self.logger.info(f"Scanning NFS directory: {nfs_path}")
-        self.logger.info(f"Filter: last {backup_days} days")
+        self.logger.info(f" Scanning NFS directory: {nfs_path}")
+        self.logger.info(f" Filter: last {backup_days} days")
         
         return self._scan_directory(nfs_path, ext_tag_map, backup_days, existing_s3_files)
     
@@ -40,18 +44,18 @@ class FileScanner:
         
         try:
             for root, dirs, files in os.walk(nfs_path):
-                # Проверка флага остановки - ИСПРАВЛЕНО: используем атрибуты объекта
+                # Проверка флага остановки
                 if not upload_stats.is_running:
-                    self.logger.info("Scanning interrupted by user")
+                    self.logger.info(" Scanning interrupted by user")
                     break
                 
                 # Игнорируем скрытые директории
                 dirs[:] = [d for d in dirs if not d.startswith('.')]
                 
                 for filename in files:
-                    # Проверка флага остановки - ИСПРАВЛЕНО: используем атрибуты объекта
+                    # Проверка флага остановки
                     if not upload_stats.is_running:
-                        self.logger.info("Scanning interrupted by user")
+                        self.logger.info(" Scanning interrupted by user")
                         break
                     
                     # Игнорируем скрытые файлы
@@ -72,7 +76,7 @@ class FileScanner:
                             backup_files.append(file_result)
                             total_size += file_result[3]  # size is at index 3
             
-            # Обновляем статистику - ИСПРАВЛЕНО: используем атрибуты объекта
+            # Обновляем статистику
             self._update_stats(len(backup_files), total_size, skipped_existing, skipped_time)
             
             # Логируем результаты
@@ -81,7 +85,7 @@ class FileScanner:
             return backup_files
             
         except Exception as e:
-            self.logger.error(f"Error scanning NFS directory: {e}")
+            self.logger.error(f" Error scanning NFS directory: {e}")
             return []
     
     def _process_file(self, root: str, filename: str, ext_tag_map: dict, 
@@ -113,11 +117,11 @@ class FileScanner:
             return (full_path, rel_path, tag, file_size)
             
         except Exception as e:
-            self.logger.warning(f"Could not process file {filename}: {e}")
+            self.logger.warning(f" Could not process file {filename}: {e}")
             return None
     
     def _update_stats(self, files_count: int, total_size: int, skipped_existing: int, skipped_time: int):
-        """Обновление статистики сканирования - ИСПРАВЛЕНО: используем атрибуты объекта"""
+        """Обновление статистики сканирования"""
         upload_stats.total_files = files_count
         upload_stats.total_bytes = total_size
         upload_stats.skipped_existing = skipped_existing
@@ -126,14 +130,14 @@ class FileScanner:
     def _log_scan_results(self, backup_files: List[Tuple], skipped_time: int, 
                          skipped_existing: int, total_size: int):
         """Логирование результатов сканирования"""
-        self.logger.info(f"Found {len(backup_files)} files for upload")
-        self.logger.info(f"Skipped {skipped_time} files (outside time range)")
-        self.logger.info(f"Skipped {skipped_existing} files (already in S3)")
-        self.logger.info(f"Total size to upload: {humanize.naturalsize(total_size)}")
+        self.logger.info(f" Scan results: {len(backup_files)} files to upload")
+        self.logger.info(f" Skipped {skipped_time} files (outside time range)")
+        self.logger.info(f" Skipped {skipped_existing} files (already in S3)")
+        self.logger.info(f" Total size to upload: {humanize.naturalsize(total_size)}")
         
         if backup_files:
             large_files = sorted(backup_files, key=lambda x: x[3], reverse=True)[:5]
-            self.logger.info("Top 5 largest files to upload:")
+            self.logger.info(" Top 5 largest files to upload:")
             for full, rel, tag, size in large_files:
                 file_time = get_file_modification_time(full)
                 self.logger.info(f"  {humanize.naturalsize(size):>10} - {file_time.strftime('%Y-%m-%d %H:%M')} - {rel}")

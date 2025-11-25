@@ -5,7 +5,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from typing import Callable, Any
 
-from app.models.schedule import Schedule
+from app.models.schedule import Schedule, ScheduleType
 
 class JobScheduler:
     """Сервис для управления планировщиком заданий"""
@@ -13,28 +13,49 @@ class JobScheduler:
     def __init__(self):
         self.scheduler = BackgroundScheduler()
         self.logger = logging.getLogger(__name__)
+        self._running = False
     
     def start(self):
         """Запуск планировщика"""
-        if not self.scheduler.running:
-            self.scheduler.start()
-            self.logger.info("Scheduler started")
+        if not self._running:
+            try:
+                self.scheduler.start()
+                self._running = True
+                self.logger.info("Scheduler started")
+            except Exception as e:
+                self.logger.error(f"Failed to start scheduler: {e}")
+                raise
+        else:
+            self.logger.debug("Scheduler already running")
     
     def shutdown(self):
         """Остановка планировщика"""
-        if self.scheduler.running:
-            self.scheduler.shutdown()
-            self.logger.info("Scheduler stopped")
+        if self._running:
+            try:
+                self.scheduler.shutdown()
+                self._running = False
+                self.logger.info("Scheduler stopped")
+            except Exception as e:
+                self.logger.error(f"Error stopping scheduler: {e}")
+                raise
+        else:
+            self.logger.debug("Scheduler not running, skip shutdown")
+    
+    @property
+    def running(self):
+        """Проверка работает ли планировщик"""
+        return self._running and self.scheduler.running
     
     def schedule_job(self, schedule: Schedule, job_func: Callable, args: tuple) -> bool:
         """Планирование задачи"""
         try:
             job_id = schedule.id
             
-            if schedule.schedule_type == 'interval':
+            # ИСПРАВЛЕНИЕ: используем value enum для сравнения
+            if schedule.schedule_type.value == 'interval':
                 trigger = IntervalTrigger(minutes=int(schedule.interval))
                 self.logger.debug(f"Scheduling interval job: {schedule.name} every {schedule.interval} minutes")
-            elif schedule.schedule_type == 'cron':
+            elif schedule.schedule_type.value == 'cron':
                 trigger = CronTrigger.from_crontab(schedule.interval)
                 self.logger.debug(f"Scheduling cron job: {schedule.name} with expression '{schedule.interval}'")
             else:
