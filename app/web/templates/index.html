@@ -20,8 +20,11 @@
                     </span>
                 </div>
             </div>
-            <div class="d-flex align-items-center">
-                <a href="{{ url_for('scheduler') }}" class="btn btn-outline-primary me-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{{ url_for('config_page') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-sliders-h me-1"></i>Configuration
+                </a>
+                <a href="{{ url_for('scheduler_page') }}" class="btn btn-outline-primary">
                     <i class="fas fa-clock me-1"></i>Scheduler
                 </a>
                 <span id="connectionStatus" class="connection-status disconnected"></span>
@@ -33,80 +36,10 @@
             </div>
         </div>
 
-        <!-- Configuration Card -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Configuration</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">NFS Path *</label>
-                            <input type="text" class="form-control" id="nfsPath" value="{{ config.NFS_PATH }}" required>
-                            <div class="form-text">Path to your NFS backup directory</div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">S3 Endpoint *</label>
-                            <input type="text" class="form-control" id="s3Endpoint" value="{{ config.S3_ENDPOINT }}" required>
-                            <div class="form-text">S3 endpoint (hostname:port)</div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">S3 Bucket *</label>
-                            <input type="text" class="form-control" id="s3Bucket" value="{{ config.S3_BUCKET }}" required>
-                            <div class="form-text">Target S3 bucket name</div>
-                            <div class="form-group">
-                            <label for="S3_ACCESS_KEY">S3 Access Key</label>
-                            <input type="text" class="form-control" id="S3_ACCESS_KEY" name="S3_ACCESS_KEY" 
-                                placeholder="Enter S3 Access Key" value="{{ config.S3_ACCESS_KEY or '' }}">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="S3_SECRET_KEY">S3 Secret Key</label>
-                            <input type="password" class="form-control" id="S3_SECRET_KEY" name="S3_SECRET_KEY" 
-                                placeholder="Enter S3 Secret Key" value="{{ config.S3_SECRET_KEY or '' }}">
-                        </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">Backup Days</label>
-                            <input type="number" class="form-control" id="backupDays" value="{{ config.BACKUP_DAYS }}" min="1" max="365">
-                            <div class="form-text">Number of days to look back for backups</div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Max Threads</label>
-                            <input type="number" class="form-control" id="maxThreads" value="{{ config.MAX_THREADS }}" min="1" max="20">
-                            <div class="form-text">Maximum concurrent upload threads</div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Storage Class</label>
-                            <select class="form-select" id="storageClass">
-                                <option value="GLACIER" {% if config.STORAGE_CLASS == 'GLACIER' %}selected{% endif %}>GLACIER</option>
-                                <option value="DEEP_ARCHIVE" {% if config.STORAGE_CLASS == 'DEEP_ARCHIVE' %}selected{% endif %}>DEEP_ARCHIVE</option>
-                                <option value="STANDARD" {% if config.STORAGE_CLASS == 'STANDARD' %}selected{% endif %}>STANDARD</option>
-                            </select>
-                            <div class="form-text">S3 storage class for uploaded files</div>
-                        </div>
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="enableTapeStorage" {% if config.ENABLE_TAPE_STORAGE %}checked{% endif %}>
-                            <label class="form-check-label" for="enableTapeStorage">Enable Tape Storage</label>
-                            <div class="form-text">Use tape storage class if available</div>
-                        </div>
-                        
-                    </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary" id="saveConfig">
-                        <i class="fas fa-save me-2"></i>Save Configuration
-                    </button>
-                    <button class="btn btn-outline-secondary" id="resetConfig">
-                        <i class="fas fa-undo me-2"></i>Reset to Defaults
-                    </button>
-                </div>
-                <div class="mt-2">
-                    <small class="text-muted">* Required fields. Configuration will be saved to .env file.</small>
-                </div>
+        <div class="alert alert-info d-flex align-items-center gap-2" role="alert">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                Configuration management has moved to a dedicated page. Click <strong>Configuration</strong> above to edit settings, select categories, or browse source files.
             </div>
         </div>
 

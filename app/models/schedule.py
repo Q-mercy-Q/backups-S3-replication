@@ -1,7 +1,7 @@
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from uuid import uuid4
 
 class ScheduleType(Enum):
@@ -22,6 +22,7 @@ class Schedule:
     last_run: Optional[str] = None
     next_run: Optional[str] = None
     description: Optional[str] = None
+    categories: Optional[List[str]] = None
     
     def __post_init__(self):
         # Конвертируем строку в Enum если нужно
@@ -48,6 +49,8 @@ class Schedule:
         # Конвертируем строковый тип в Enum
         if isinstance(data.get('schedule_type'), str):
             data['schedule_type'] = ScheduleType(data['schedule_type'])
+        if 'categories' in data and data['categories'] is None:
+            data['categories'] = None
         
         return cls(**data)
     
@@ -66,6 +69,9 @@ class Schedule:
                     raise ValueError("Interval must be positive")
             except (ValueError, TypeError):
                 raise ValueError("Interval must be a positive integer")
+
+        if self.categories:
+            self.categories = [str(category).strip() for category in self.categories if str(category).strip()]
         
         return True
     

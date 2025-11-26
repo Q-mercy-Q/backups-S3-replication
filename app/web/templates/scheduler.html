@@ -123,6 +123,22 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">File Categories</label>
+                                <div class="d-flex flex-wrap gap-3" id="scheduleCategoryOptions">
+                                    {% for category in category_options %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input schedule-category" type="checkbox" id="schedule-cat-{{ category }}" value="{{ category }}" checked>
+                                        <label class="form-check-label" for="schedule-cat-{{ category }}">{{ category|title }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text">Select which types of backup files should be included for this schedule.</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row" id="cronSection" style="display: none;">
                         <div class="col-12">
                             <div class="mb-3">

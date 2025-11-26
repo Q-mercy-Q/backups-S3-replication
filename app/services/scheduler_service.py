@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from app.models.stats import UploadStats  
 from app.models.schedule import Schedule
 from app.models.sync_history import SyncHistory
-from app.utils.config import validate_environment, upload_stats, get_config
+from app.utils.config import validate_environment, upload_stats, get_config, get_file_categories
 from app.services.file_scanner import scan_backup_files
 from app.services.s3_client import test_connection, get_existing_s3_files
 from app.services.upload_manager import upload_files
@@ -45,7 +45,15 @@ class SchedulerService:
         """Сохранение расписаний"""
         self.storage.save_schedules(self.schedules, self.sync_history, self.max_history_entries)
     
-    def add_schedule(self, schedule_id: str, name: str, schedule_type: str, interval: str, enabled: bool = True) -> bool:
+    def add_schedule(
+        self,
+        schedule_id: str,
+        name: str,
+        schedule_type: str,
+        interval: str,
+        enabled: bool = True,
+        categories: Optional[List[str]] = None
+    ) -> bool:
         """Добавление нового расписания"""
         try:
             # Валидация интервала
@@ -63,7 +71,8 @@ class SchedulerService:
                 name=name,
                 schedule_type=schedule_type,
                 interval=interval,
-                enabled=enabled
+                enabled=enabled,
+                categories=categories or None
             )
             
             # Валидация расписания
@@ -175,13 +184,16 @@ class SchedulerService:
             self.debug_logger.info(" Environment validation passed")
             
             # Шаг 3: Получение существующих файлов S3
+            selected_categories = schedule.categories or get_file_categories()
+            self.debug_logger.info(f" Applying categories filter: {', '.join(selected_categories)}")
+
             self.debug_logger.info(" Getting existing S3 files...")
             existing_files = get_existing_s3_files()
             self.debug_logger.info(f" Found {len(existing_files)} existing files in S3")
             
             # Шаг 4: Сканирование файлов бэкапа
             self.debug_logger.info(" Scanning backup files...")
-            files_to_upload = scan_backup_files(existing_files)
+            files_to_upload = scan_backup_files(existing_files, selected_categories)
             self.debug_logger.info(f" Scan completed: {len(files_to_upload)} files to upload")
             
             # Обновляем статистику после сканирования
