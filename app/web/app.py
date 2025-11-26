@@ -31,10 +31,11 @@ def create_app_with_socketio():
     )
     
     # Регистрируем обработчики
-    from app.web import routes, socket_events, background_tasks
+    from app.web.routes import init_routes
+    from app.web import socket_events, background_tasks
     
     # Инициализируем маршруты
-    routes.init_routes(app)
+    init_routes(app, socketio)
     
     # Инициализируем SocketIO события
     socket_events.init_socket_events(socketio)

@@ -2,9 +2,9 @@ import os
 import logging
 import humanize
 from datetime import datetime
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Optional
 
-from app.utils.config import get_nfs_path, get_ext_tag_map, get_backup_days, upload_stats
+from app.utils.config import get_nfs_path, get_ext_tag_map, get_backup_days, get_file_categories, upload_stats
 from app.utils.file_utils import get_file_modification_time, is_file_in_time_range, normalize_s3_key
 
 class FileScanner:
@@ -13,7 +13,7 @@ class FileScanner:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     
-    def scan_backup_files(self, existing_s3_files: Set[str] = None) -> List[Tuple]:
+    def scan_backup_files(self, existing_s3_files: Set[str] = None, categories: Optional[List[str]] = None) -> List[Tuple]:
         """Сканирует файлы бэкапов с фильтрацией"""
         if existing_s3_files is None:
             existing_s3_files = set()
@@ -33,9 +33,10 @@ class FileScanner:
         self.logger.info(f" Scanning NFS directory: {nfs_path}")
         self.logger.info(f" Filter: last {backup_days} days")
         
-        return self._scan_directory(nfs_path, ext_tag_map, backup_days, existing_s3_files)
+        selected_categories = categories or get_file_categories()
+        return self._scan_directory(nfs_path, ext_tag_map, backup_days, existing_s3_files, selected_categories)
     
-    def _scan_directory(self, nfs_path: str, ext_tag_map: dict, backup_days: int, existing_s3_files: Set[str]) -> List[Tuple]:
+    def _scan_directory(self, nfs_path: str, ext_tag_map: dict, backup_days: int, existing_s3_files: Set[str], categories: List[str]) -> List[Tuple]:
         """Рекурсивное сканирование директории"""
         backup_files = []
         total_size = 0
@@ -63,8 +64,8 @@ class FileScanner:
                         continue
                     
                     file_result = self._process_file(
-                        root, filename, ext_tag_map, backup_days, 
-                        existing_s3_files, nfs_path
+                        root, filename, ext_tag_map, backup_days,
+                        existing_s3_files, nfs_path, categories
                     )
                     
                     if file_result:
@@ -88,8 +89,9 @@ class FileScanner:
             self.logger.error(f" Error scanning NFS directory: {e}")
             return []
     
-    def _process_file(self, root: str, filename: str, ext_tag_map: dict, 
-                     backup_days: int, existing_s3_files: Set[str], nfs_path: str):
+    def _process_file(self, root: str, filename: str, ext_tag_map: dict,
+                     backup_days: int, existing_s3_files: Set[str], nfs_path: str,
+                     categories: List[str]):
         """Обработка отдельного файла"""
         try:
             full_path = os.path.join(root, filename)
@@ -98,6 +100,9 @@ class FileScanner:
             ext = os.path.splitext(filename)[1].lower()
             tag = ext_tag_map.get(ext)
             if not tag:
+                return None
+
+            if categories and tag not in categories:
                 return None
             
             # Проверяем временной диапазон
@@ -146,8 +151,8 @@ class FileScanner:
 file_scanner = FileScanner()
 
 # Функции для обратной совместимости
-def scan_backup_files(existing_s3_files=None):
-    return file_scanner.scan_backup_files(existing_s3_files)
+def scan_backup_files(existing_s3_files=None, categories: Optional[List[str]] = None):
+    return file_scanner.scan_backup_files(existing_s3_files, categories)
 
 def get_file_modification_time(file_path):
     from app.utils.file_utils import get_file_modification_time as get_mtime

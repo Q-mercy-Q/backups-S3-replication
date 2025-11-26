@@ -175,39 +175,6 @@ async function apiCall(url, options = {}) {
     }
 }
 
-// Get current configuration from form
-function getCurrentConfig() {
-    const config = {
-        NFS_PATH: document.getElementById('nfsPath').value.trim(),
-        S3_ENDPOINT: document.getElementById('s3Endpoint').value.trim(),
-        S3_BUCKET: document.getElementById('s3Bucket').value.trim(),
-        S3_ACCESS_KEY: document.getElementById('S3_ACCESS_KEY').value.trim(),
-        S3_SECRET_KEY: document.getElementById('S3_SECRET_KEY').value.trim(),
-        BACKUP_DAYS: parseInt(document.getElementById('backupDays').value) || 7,
-        MAX_THREADS: parseInt(document.getElementById('maxThreads').value) || 4,
-        STORAGE_CLASS: document.getElementById('storageClass').value,
-        ENABLE_TAPE_STORAGE: document.getElementById('enableTapeStorage').checked ? 'true' : 'false'
-    };
-    
-    console.log('Collected config:', config);
-    
-    // Validation
-    if (!config.NFS_PATH) {
-        showNotification('NFS Path is required', 'error');
-        throw new Error('NFS Path is required');
-    }
-    if (!config.S3_ENDPOINT) {
-        showNotification('S3 Endpoint is required', 'error');
-        throw new Error('S3 Endpoint is required');
-    }
-    if (!config.S3_BUCKET) {
-        showNotification('S3 Bucket is required', 'error');
-        throw new Error('S3 Bucket is required');
-    }
-    
-    return config;
-}
-
 // Show/hide loading states
 function showLoadingState() {
     document.body.style.cursor = 'wait';
@@ -221,53 +188,30 @@ function hideLoadingState() {
 function setupEventListeners() {
     // Start Upload
     document.getElementById('startUpload').addEventListener('click', async () => {
-        try {
-            const config = getCurrentConfig();
-            const result = await apiCall('/api/start_upload', { 
-                method: 'POST',
-                body: config
-            });
-            
-            handleApiResult(result, 'Upload');
-        } catch (error) {
-            showNotification(error.message, 'error');
-        }
+        const result = await apiCall('/api/start_upload', { method: 'POST' });
+        handleApiResult(result, 'Upload');
     });
 
     // Stop Upload
     document.getElementById('stopUpload').addEventListener('click', async () => {
-        const result = await apiCall('/api/stop_upload', { method: 'POST' });
+        const finishCurrent = confirm('Докачать текущие загружаемые файлы перед остановкой? Нажмите OK чтобы завершить текущие файлы, Cancel чтобы остановить немедленно.');
+        const result = await apiCall('/api/stop_upload', { 
+            method: 'POST',
+            body: { mode: finishCurrent ? 'graceful' : 'force' }
+        });
         handleApiResult(result, 'Stop upload');
     });
 
     // Test Connection
     document.getElementById('testConnection').addEventListener('click', async () => {
-        try {
-            const config = getCurrentConfig();
-            const result = await apiCall('/api/test_connection', { 
-                method: 'POST',
-                body: config
-            });
-            
-            handleApiResult(result, 'Connection test');
-        } catch (error) {
-            showNotification(error.message, 'error');
-        }
+        const result = await apiCall('/api/test_connection', { method: 'POST' });
+        handleApiResult(result, 'Connection test');
     });
 
     // Scan Files
     document.getElementById('scanFiles').addEventListener('click', async () => {
-        try {
-            const config = getCurrentConfig();
-            const result = await apiCall('/api/scan_files', { 
-                method: 'POST',
-                body: config
-            });
-            
-            handleScanResult(result);
-        } catch (error) {
-            showNotification(error.message, 'error');
-        }
+        const result = await apiCall('/api/scan_files', { method: 'POST' });
+        handleScanResult(result);
     });
 
     // Refresh Stats
@@ -275,34 +219,6 @@ function setupEventListeners() {
         const result = await apiCall('/api/statistics');
         updateStatistics(result);
         addLogEntry({ level: 'info', message: 'Statistics refreshed', timestamp: new Date().toLocaleTimeString() });
-    });
-
-    // Save Configuration
-    document.getElementById('saveConfig').addEventListener('click', async () => {
-        try {
-            const config = getCurrentConfig();
-            console.log('Saving config:', config);
-            
-            const result = await apiCall('/api/config', {
-                method: 'POST',
-                body: config
-            });
-
-            console.log('Save config result:', result);
-            handleApiResult(result, 'Save config');
-        } catch (error) {
-            console.error('Save config error:', error);
-            showNotification(error.message, 'error');
-        }
-    });
-
-    // Reset Configuration
-    document.getElementById('resetConfig').addEventListener('click', () => {
-        if (confirm('Are you sure you want to reset configuration to defaults? This will reload the page.')) {
-            // Reset form values to initial state (from server)
-            loadInitialConfiguration();
-            showNotification('Configuration form reset to initial values', 'info');
-        }
     });
 
     // Clear Logs
@@ -323,12 +239,10 @@ function setupEventListeners() {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        // Ctrl+Enter to start upload
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             document.getElementById('startUpload').click();
         }
-        // Escape to stop upload
         if (e.key === 'Escape' && appState.uploadInProgress) {
             document.getElementById('stopUpload').click();
         }
@@ -343,10 +257,6 @@ function handleApiResult(result, action) {
         showNotification(result.message, 'success');
         addLogEntry({ level: 'info', message: result.message, timestamp: new Date().toLocaleTimeString() });
         
-        // If saving config was successful, update the form with the returned config
-        if (action === 'Save config' && result.config) {
-            updateFormWithConfig(result.config);
-        }
     } else {
         showNotification(result.message, 'error');
         addLogEntry({ level: 'error', message: result.message, timestamp: new Date().toLocaleTimeString() });
@@ -420,40 +330,9 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Load initial configuration from server
-async function loadInitialConfiguration() {
-    try {
-        const response = await fetch('/api/config');
-        const config = await response.json();
-        console.log('Loaded initial config:', config);
-        updateFormWithConfig(config);
-    } catch (error) {
-        console.error('Error loading configuration:', error);
-        showNotification('Error loading configuration', 'error');
-    }
-}
-
-// Update form with configuration data
-function updateFormWithConfig(config) {
-    console.log('Updating form with config:', config);
-    
-    document.getElementById('nfsPath').value = config.NFS_PATH || '';
-    document.getElementById('s3Endpoint').value = config.S3_ENDPOINT || '';
-    document.getElementById('s3Bucket').value = config.S3_BUCKET || '';
-    document.getElementById('S3_ACCESS_KEY').value = config.S3_ACCESS_KEY || '';
-    document.getElementById('S3_SECRET_KEY').value = config.S3_SECRET_KEY || '';
-    document.getElementById('backupDays').value = config.BACKUP_DAYS || '7';
-    document.getElementById('maxThreads').value = config.MAX_THREADS || '4';
-    document.getElementById('storageClass').value = config.STORAGE_CLASS || 'GLACIER';
-    document.getElementById('enableTapeStorage').checked = config.ENABLE_TAPE_STORAGE === 'true';
-}
-
 // Initialize the application
 function initApp() {
     setupEventListeners();
-    
-    // Load initial configuration
-    loadInitialConfiguration();
     
     // Initial statistics load
     apiCall('/api/statistics').then(updateStatistics);

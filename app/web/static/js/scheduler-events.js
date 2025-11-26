@@ -123,6 +123,11 @@ export class SchedulerEvents {
             interval: interval.toString(),
             enabled: document.getElementById('scheduleEnabled')?.checked || true
         };
+
+        const categories = this.getSelectedCategories();
+        if (categories.length > 0) {
+            formData.categories = categories;
+        }
         
         try {
             const result = await this.api.addSchedule(formData);
@@ -141,6 +146,7 @@ export class SchedulerEvents {
                 document.getElementById('scheduleIntervalValue').value = '1';
                 document.getElementById('scheduleIntervalUnit').value = 'hours';
                 document.getElementById('scheduleEnabled').checked = true;
+                this.resetCategorySelection();
                 
                 await this.app.loadSchedules();
             } else {
@@ -170,5 +176,15 @@ export class SchedulerEvents {
 
     async clearDebugLogs() {
         await this.app.clearDebugLogs();
+    }
+
+    getSelectedCategories() {
+        return Array.from(document.querySelectorAll('.schedule-category:checked')).map(input => input.value);
+    }
+
+    resetCategorySelection() {
+        document.querySelectorAll('.schedule-category').forEach(input => {
+            input.checked = true;
+        });
     }
 }

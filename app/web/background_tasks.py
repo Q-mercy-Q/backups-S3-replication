@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 import humanize
 
-from app.utils.config import upload_stats, validate_environment
+from app.utils.config import upload_stats, validate_environment, get_file_categories
 from app.services.file_scanner import scan_backup_files
 from app.services.s3_client import test_connection, get_existing_s3_files
 from app.services.upload_manager import upload_files
@@ -57,7 +57,7 @@ def run_upload():
         
         # Сканируем файлы для загрузки
         logging.info("Scanning backup files...")
-        files_to_upload = scan_backup_files(existing_files)
+        files_to_upload = scan_backup_files(existing_files, get_file_categories())
         if not files_to_upload:
             logging.info("No files to upload. Exiting.")
             return
@@ -90,7 +90,7 @@ def scan_files_with_config():
         upload_stats.skipped_time = 0
         
         existing_files = get_existing_s3_files()
-        files = scan_backup_files(existing_files)
+        files = scan_backup_files(existing_files, get_file_categories())
         
         # Восстанавливаем состояние
         upload_stats.is_running = original_running

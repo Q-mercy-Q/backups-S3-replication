@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - S3 Backup Upload Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-0">Configuration</h1>
+                <p class="text-muted mb-0">Manage upload settings, categories and source files</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+                <a href="{{ url_for('scheduler_page') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-clock me-1"></i> Scheduler
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Connection Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="configForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">NFS Path *</label>
+                                        <input type="text" class="form-control" id="nfsPath" value="{{ config.NFS_PATH }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">S3 Endpoint *</label>
+                                        <input type="text" class="form-control" id="s3Endpoint" value="{{ config.S3_ENDPOINT }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">S3 Bucket *</label>
+                                        <input type="text" class="form-control" id="s3Bucket" value="{{ config.S3_BUCKET }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">S3 Access Key *</label>
+                                        <input type="text" class="form-control" id="S3_ACCESS_KEY" value="{{ config.S3_ACCESS_KEY }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">S3 Secret Key *</label>
+                                        <input type="password" class="form-control" id="S3_SECRET_KEY" value="{{ config.S3_SECRET_KEY }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Backup Days</label>
+                                        <input type="number" class="form-control" id="backupDays" value="{{ config.BACKUP_DAYS }}" min="1" max="365">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Max Threads</label>
+                                        <input type="number" class="form-control" id="maxThreads" value="{{ config.MAX_THREADS }}" min="1" max="20">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Storage Class</label>
+                                        <select class="form-select" id="storageClass">
+                                            <option value="STANDARD" {% if config.STORAGE_CLASS == 'STANDARD' %}selected{% endif %}>STANDARD</option>
+                                            <option value="GLACIER" {% if config.STORAGE_CLASS == 'GLACIER' %}selected{% endif %}>GLACIER</option>
+                                            <option value="DEEP_ARCHIVE" {% if config.STORAGE_CLASS == 'DEEP_ARCHIVE' %}selected{% endif %}>DEEP ARCHIVE</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enableTapeStorage" {% if config.ENABLE_TAPE_STORAGE %}checked{% endif %}>
+                                        <label class="form-check-label" for="enableTapeStorage">Enable Tape Storage</label>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Upload Retries</label>
+                                                <input type="number" class="form-control" id="uploadRetries" value="{{ config.UPLOAD_RETRIES or 3 }}" min="0" max="10">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Retry Delay (s)</label>
+                                                <input type="number" class="form-control" id="retryDelay" value="{{ config.RETRY_DELAY or 5 }}" min="1" max="60">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Backup Categories</label>
+                                <div class="d-flex flex-wrap gap-3" id="categoryOptions">
+                                    {% for category in category_options %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input category-option" type="checkbox" id="cat-{{ category }}" value="{{ category }}">
+                                        <label class="form-check-label" for="cat-{{ category }}">{{ category|title }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text">Selected categories will be used for manual uploads and schedules (unless overridden per schedule).</div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-primary" id="saveConfig">
+                                    <i class="fas fa-save me-2"></i>Save Configuration
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="resetConfig">
+                                    <i class="fas fa-undo me-2"></i>Reset Changes
+                                </button>
+                                <button type="button" class="btn btn-info" id="configTestConnection">
+                                    <i class="fas fa-plug me-2"></i>Test Connection
+                                </button>
+                                <button type="button" class="btn btn-outline-info" id="configScanFiles">
+                                    <i class="fas fa-search me-2"></i>Scan Files
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0"><i class="fas fa-folder-open me-2"></i>Source Directory</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary" id="fileBrowserUp">
+                                <i class="fas fa-level-up-alt me-1"></i> Up
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <small class="text-muted">Current path:</small>
+                            <div class="fw-bold" id="fileBrowserPath">{{ config.NFS_PATH }}</div>
+                        </div>
+                        <div class="table-responsive file-browser-table">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th style="width: 120px;">Size</th>
+                                        <th style="width: 160px;">Modified</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fileBrowserBody">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted py-3">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-code me-2"></i>Configuration Preview</h5>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-light p-3 rounded" id="configPreview" style="font-size: 0.85rem; height: 240px; overflow-y: auto;">Loading...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/config.js') }}" type="module"></script>
+</body>
+</html>
+

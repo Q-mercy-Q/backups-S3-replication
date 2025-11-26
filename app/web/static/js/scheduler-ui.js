@@ -105,6 +105,7 @@ export class SchedulerUI {
                 <div class="card schedule-card h-100">
                     <div class="card-body">
                         ${this._createScheduleCardHeaderHTML(schedule)}
+                        ${this._createScheduleCategoriesHTML(schedule)}
                         ${this._createScheduleIntervalHTML(intervalDisplay)}
                         ${this._createScheduleStatsHTML(stats, successRate, successRateClass)}
                         ${this._createScheduleActionsHTML(id, schedule)}
@@ -123,6 +124,21 @@ export class SchedulerUI {
                     <i class="fas ${schedule.enabled ? 'fa-play' : 'fa-pause'} me-1"></i>
                     ${schedule.enabled ? 'Active' : 'Disabled'}
                 </span>
+            </div>
+        `;
+    }
+
+    _createScheduleCategoriesHTML(schedule) {
+        if (!schedule.categories || schedule.categories.length === 0) {
+            return '';
+        }
+        const badges = schedule.categories.map(category => 
+            `<span class="badge bg-light text-dark border me-1 mb-1">${category}</span>`
+        ).join('');
+        return `
+            <div class="mb-2">
+                <small class="text-muted d-block mb-1">Categories:</small>
+                ${badges}
             </div>
         `;
     }
@@ -369,6 +385,12 @@ export class SchedulerUI {
                         <i class="fas fa-power-off me-1"></i>
                         Status: <span class="badge ${schedule.enabled ? 'bg-success' : 'bg-secondary'}">${schedule.enabled ? 'Active' : 'Disabled'}</span>
                     </p>
+                ${schedule.categories && schedule.categories.length ? `
+                <p class="text-muted">
+                    <i class="fas fa-tags me-1"></i>
+                    Categories: ${schedule.categories.join(', ')}
+                </p>
+                ` : ''}
                 </div>
             </div>
             

@@ -54,9 +54,14 @@ class SyncHistory:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'SyncHistory':
         """Создание из словаря"""
+        data = data.copy()
         # Конвертируем строковый статус в Enum
         if isinstance(data.get('status'), str):
             data['status'] = SyncStatus(data['status'])
+
+        # Удаляем вычисляемые поля, которых нет в dataclass
+        for transient in ('success_rate', 'duration_formatted', 'total_size_formatted', 'uploaded_size_formatted'):
+            data.pop(transient, None)
         
         return cls(**data)
     
