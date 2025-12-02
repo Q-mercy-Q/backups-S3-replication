@@ -2,7 +2,9 @@ const state = {
     currentConfig: {},
     currentPath: '.',
     basePath: '',
-    categoryOptions: []
+    categoryOptions: [],
+    configList: [],
+    currentConfigId: null
 };
 
 function showNotification(message, type = 'info') {
@@ -36,7 +38,7 @@ async function apiCall(url, options = {}) {
 }
 
 function collectConfigFromForm() {
-    return {
+    const config = {
         NFS_PATH: document.getElementById('nfsPath').value.trim(),
         S3_ENDPOINT: document.getElementById('s3Endpoint').value.trim(),
         S3_BUCKET: document.getElementById('s3Bucket').value.trim(),
@@ -45,11 +47,26 @@ function collectConfigFromForm() {
         BACKUP_DAYS: document.getElementById('backupDays').value,
         MAX_THREADS: document.getElementById('maxThreads').value,
         STORAGE_CLASS: document.getElementById('storageClass').value,
-        ENABLE_TAPE_STORAGE: document.getElementById('enableTapeStorage').checked ? 'true' : 'false',
         UPLOAD_RETRIES: document.getElementById('uploadRetries').value,
         RETRY_DELAY: document.getElementById('retryDelay').value,
         FILE_CATEGORIES: getSelectedCategories()
     };
+    
+    // Обрабатываем маппинг расширений
+    const extTagMapInput = document.getElementById('extTagMap');
+    if (extTagMapInput) {
+        try {
+            const extTagMapText = extTagMapInput.value.trim();
+            if (extTagMapText) {
+                config.EXT_TAG_MAP = JSON.parse(extTagMapText);
+            }
+        } catch (e) {
+            console.error('Invalid EXT_TAG_MAP JSON:', e);
+            // Оставляем пустым, чтобы сервер мог вернуть ошибку
+        }
+    }
+    
+    return config;
 }
 
 function getSelectedCategories() {
@@ -70,8 +87,20 @@ function updateConfigPreview(config) {
 
 async function loadConfiguration() {
     try {
-        const config = await apiCall('/api/config');
+        // Check if we have a config_id from config-multi.js
+        let configId = null;
+        if (typeof window.getCurrentConfigId === 'function') {
+            configId = window.getCurrentConfigId();
+        }
+        
+        const url = configId ? `/api/config?config_id=${configId}` : '/api/config';
+        const config = await apiCall(url);
         state.currentConfig = config;
+        
+        // Store config_id if available
+        if (config.CONFIG_ID && typeof window.setCurrentConfigId === 'function') {
+            window.setCurrentConfigId(config.CONFIG_ID);
+        }
         state.basePath = config.NFS_PATH || '';
         document.getElementById('nfsPath').value = config.NFS_PATH || '';
         document.getElementById('s3Endpoint').value = config.S3_ENDPOINT || '';
@@ -81,10 +110,24 @@ async function loadConfiguration() {
         document.getElementById('backupDays').value = config.BACKUP_DAYS || '7';
         document.getElementById('maxThreads').value = config.MAX_THREADS || '4';
         document.getElementById('storageClass').value = config.STORAGE_CLASS || 'STANDARD';
-        document.getElementById('enableTapeStorage').checked = config.ENABLE_TAPE_STORAGE === 'true';
         document.getElementById('uploadRetries').value = config.UPLOAD_RETRIES || '3';
         document.getElementById('retryDelay').value = config.RETRY_DELAY || '5';
         setSelectedCategories(config.FILE_CATEGORIES || []);
+        
+        // Загружаем маппинг расширений
+        const extTagMapInput = document.getElementById('extTagMap');
+        if (extTagMapInput && config.EXT_TAG_MAP) {
+            extTagMapInput.value = JSON.stringify(config.EXT_TAG_MAP, null, 2);
+        } else if (extTagMapInput) {
+            // Дефолтный маппинг
+            extTagMapInput.value = JSON.stringify({
+                '.vbk': 'full',
+                '.vib': 'incremental',
+                '.vbm': 'metadata',
+                '.log': 'logs'
+            }, null, 2);
+        }
+        
         updateConfigPreview(config);
         await loadFileBrowser('.');
         showNotification('Configuration loaded', 'success');
@@ -97,14 +140,28 @@ async function loadConfiguration() {
 async function saveConfiguration() {
     try {
         const config = collectConfigFromForm();
+        
+        // Add config_id if we're editing a specific config
+        let configId = null;
+        if (typeof window.getCurrentConfigId === 'function') {
+            configId = window.getCurrentConfigId();
+        }
+        if (configId) {
+            config.CONFIG_ID = configId;
+        }
+        
         const result = await apiCall('/api/config', {
             method: 'POST',
             body: config
         });
         showNotification(result.message || 'Configuration saved', 'success');
-        updateConfigPreview(result.config || config);
+        // Перезагружаем конфигурацию обратно в форму после успешного сохранения
+        // Это гарантирует, что данные останутся в форме даже после сохранения
+        await loadConfiguration();
     } catch (error) {
         showNotification('Failed to save configuration: ' + error.message, 'error');
+        // При ошибке тоже перезагружаем, чтобы восстановить сохраненные данные
+        await loadConfiguration();
     }
 }
 
@@ -238,4 +295,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadConfiguration();
     setupCategoryInteractions();
 });
+
 

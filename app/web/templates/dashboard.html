@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - S3 Backup Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-cloud-upload-alt me-2"></i>S3 Backup Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('upload_manager_page') }}">
+                            <i class="fas fa-upload me-1"></i>Upload Manager
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('scheduler_page') }}">
+                            <i class="fas fa-clock me-1"></i>Scheduler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_browser_page') }}">
+                            <i class="fas fa-cloud me-1"></i>S3 Browser
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_management_page') }}">
+                            <i class="fas fa-cog me-1"></i>S3 Management
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item me-2">
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('config_page') }}" title="Конфигурация">
+                            <i class="fas fa-sliders-h me-1"></i>Configuration
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item me-2">
+                        <a class="btn btn-warning btn-sm" href="{{ url_for('admin_dashboard') }}" title="Админ-панель">
+                            <i class="fas fa-user-shield me-1"></i>Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ current_user.username }}</span>
+                            {% if current_user.is_admin %}
+                                <span class="badge bg-warning text-dark ms-2">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-2"></i>Личный кабинет
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('config_page') }}">
+                                <i class="fas fa-sliders-h me-2"></i>Configuration
+                            </a></li>
+                            {% if current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-user-shield me-2"></i>Админ-панель
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Выход
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid page-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-2">Dashboard</h1>
+                <p class="text-muted mb-0">Overview of your backup system</p>
+            </div>
+        </div>
+
+        <!-- Upload Status Card -->
+        <div class="row equal-height mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-upload me-2"></i>Upload Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="uploadStatusCard" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2">Loading upload status...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-clock me-2"></i>Scheduler Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="schedulerStatusCard" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-2">Loading scheduler status...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="quick-actions-row">
+                    <a href="{{ url_for('upload_manager_page') }}" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i>Upload Manager
+                    </a>
+                    <a href="{{ url_for('scheduler_page') }}" class="btn btn-info">
+                        <i class="fas fa-clock me-2"></i>Scheduler
+                    </a>
+                    <a href="{{ url_for('s3_browser_page') }}" class="btn btn-success">
+                        <i class="fas fa-cloud me-2"></i>S3 Browser
+                    </a>
+                    <a href="{{ url_for('config_page') }}" class="btn btn-secondary">
+                        <i class="fas fa-sliders-h me-2"></i>Configuration
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="row equal-height">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Upload Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="uploadStatsOverview">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2">Loading statistics...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-tasks me-2"></i>Scheduler Overview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="schedulerStatsOverview">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2">Loading statistics...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload History Charts -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Upload History</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="uploadHistoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row equal-height mb-4">
+            <div class="col-md-6">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2"></i>Files Status Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="filesStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-area me-2"></i>Data Volume Over Time</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="dataVolumeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h5>
+                <button class="btn btn-sm btn-outline-secondary" id="refreshDashboard">
+                    <i class="fas fa-sync me-1"></i>Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="recentActivity">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Loading recent activity...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard-charts.js') }}"></script>
+</body>
+</html>
+

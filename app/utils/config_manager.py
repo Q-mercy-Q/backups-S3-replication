@@ -111,7 +111,13 @@ class AppConfig:
 
 
 class ConfigManager:
-    """Менеджер конфигурации с поддержкой файлов и переменных окружения"""
+    """
+    Менеджер конфигурации с поддержкой файлов и переменных окружения
+    
+    ⚠️ УСТАРЕВШИЙ КОД: Этот класс больше не используется для пользовательских конфигураций.
+    Все пользовательские конфигурации теперь хранятся в БД через app.utils.user_config.
+    Этот класс оставлен только для обратной совместимости и может быть удален в будущем.
+    """
     
     def __init__(self, config_file: str = 'data/config.json'):
         self.config_file = Path(config_file)
@@ -248,6 +254,8 @@ class ConfigManager:
 
 
 # Глобальный экземпляр менеджера конфигурации
+# ⚠️ УСТАРЕВШИЙ КОД: Не используется для пользовательских конфигураций.
+# Все конфигурации пользователей хранятся в БД через app.utils.user_config
 _config_manager = ConfigManager()
 
 
@@ -262,7 +270,14 @@ def get_config_object() -> AppConfig:
 
 
 def update_config(new_config: Dict[str, Any]) -> None:
-    """Обновление конфигурации (для обратной совместимости)"""
+    """
+    Обновление конфигурации (для обратной совместимости)
+    
+    ⚠️ УСТАРЕВШАЯ ФУНКЦИЯ: Эта функция пишет в файл и больше не должна использоваться!
+    Для пользовательских конфигураций используйте app.utils.config.update_config()
+    или app.utils.user_config.save_user_config() для работы с БД.
+    """
+    logger.warning("⚠️ DEPRECATED: config_manager.update_config() writes to file. Use app.utils.config.update_config() for database storage.")
     _config_manager.update_config(new_config)
 
 

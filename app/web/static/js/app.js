@@ -79,9 +79,31 @@ function updateStatistics(data) {
     appState.uploadInProgress = data.is_running;
     document.getElementById('startUpload').disabled = data.is_running;
     document.getElementById('stopUpload').disabled = !data.is_running;
+    const abortBtn = document.getElementById('abortUpload');
+    if (abortBtn) {
+        abortBtn.disabled = !data.is_running;
+    }
+    
+    // Update charts if they exist
+    if (typeof updateUploadSpeedChart === 'function') {
+        updateUploadSpeedChart(data.upload_speed);
+    }
+    if (typeof updateFilesProgressChart === 'function') {
+        updateFilesProgressChart(data.successful, data.failed, data.files_to_upload);
+    }
     
     // Update UI based on upload state
     updateUploadStateUI(data.is_running);
+    
+    // Reset charts when upload stops
+    if (!data.is_running && typeof resetUploadCharts === 'function') {
+        // Don't reset immediately, wait a bit to see final state
+        setTimeout(() => {
+            if (!appState.uploadInProgress) {
+                resetUploadCharts();
+            }
+        }, 5000);
+    }
 }
 
 function updateProgressBarColor(progress) {
@@ -188,30 +210,86 @@ function hideLoadingState() {
 function setupEventListeners() {
     // Start Upload
     document.getElementById('startUpload').addEventListener('click', async () => {
-        const result = await apiCall('/api/start_upload', { method: 'POST' });
-        handleApiResult(result, 'Upload');
+        try {
+            // Проверяем режим загрузки
+            const uploadMode = (typeof window.getCurrentUploadMode === 'function') 
+                ? window.getCurrentUploadMode() 
+                : 'auto';
+            const payload = { upload_mode: uploadMode };
+            
+            // Добавляем выбранный storage_class
+            const storageClassSelect = document.getElementById('uploadStorageClass');
+            if (storageClassSelect) {
+                payload.STORAGE_CLASS = storageClassSelect.value;
+            }
+            
+            // Добавляем config_id если выбран
+            const configSelector = document.getElementById('uploadConfigSelector');
+            if (configSelector && configSelector.value) {
+                payload.CONFIG_ID = parseInt(configSelector.value);
+            }
+            
+            // Если режим manual, добавляем выбранные файлы
+            if (uploadMode === 'manual') {
+                const selected = (typeof window.selectedFiles === 'function') 
+                    ? window.selectedFiles() 
+                    : [];
+                if (selected.length === 0) {
+                    showNotification('Please select files first', 'warning');
+                    return;
+                }
+                payload.files_to_upload = selected;
+            }
+            
+            const result = await apiCall('/api/start_upload', { 
+                method: 'POST',
+                body: payload
+            });
+            handleApiResult(result, 'Upload');
+        } catch (error) {
+            console.error('Error starting upload:', error);
+            showNotification(`Error starting upload: ${error.message}`, 'error');
+        }
     });
 
-    // Stop Upload
+    // Stop Upload (graceful)
     document.getElementById('stopUpload').addEventListener('click', async () => {
-        const finishCurrent = confirm('Докачать текущие загружаемые файлы перед остановкой? Нажмите OK чтобы завершить текущие файлы, Cancel чтобы остановить немедленно.');
         const result = await apiCall('/api/stop_upload', { 
             method: 'POST',
-            body: { mode: finishCurrent ? 'graceful' : 'force' }
+            body: { mode: 'graceful' }
         });
-        handleApiResult(result, 'Stop upload');
+        handleApiResult(result, 'Остановка загрузки');
+    });
+    
+    // Abort Upload (force)
+    document.getElementById('abortUpload').addEventListener('click', async () => {
+        const confirmed = await showConfirmModal(
+            'Прервать загрузку',
+            'Вы уверены, что хотите немедленно прервать загрузку? Все активные загрузки будут остановлены, оставшиеся файлы будут отменены.',
+            'Прервать',
+            'Отмена',
+            'danger'
+        );
+        if (!confirmed) {
+            return;
+        }
+        const result = await apiCall('/api/stop_upload', { 
+            method: 'POST',
+            body: { mode: 'force' }
+        });
+        handleApiResult(result, 'Прерывание загрузки');
     });
 
     // Test Connection
     document.getElementById('testConnection').addEventListener('click', async () => {
         const result = await apiCall('/api/test_connection', { method: 'POST' });
-        handleApiResult(result, 'Connection test');
+            handleApiResult(result, 'Connection test');
     });
 
     // Scan Files
     document.getElementById('scanFiles').addEventListener('click', async () => {
         const result = await apiCall('/api/scan_files', { method: 'POST' });
-        handleScanResult(result);
+            handleScanResult(result);
     });
 
     // Refresh Stats
@@ -262,6 +340,9 @@ function handleApiResult(result, action) {
         addLogEntry({ level: 'error', message: result.message, timestamp: new Date().toLocaleTimeString() });
     }
 }
+
+// Экспортируем showNotification глобально
+window.showNotification = showNotification;
 
 // Handle scan results
 function handleScanResult(result) {

@@ -26,6 +26,42 @@ export class SchedulerEvents {
         if (addScheduleForm) {
             addScheduleForm.addEventListener('submit', (e) => this.handleAddSchedule(e));
         }
+        
+        // Обработчики для переключения режима фильтрации
+        const filterModeRadios = document.querySelectorAll('input[name="scheduleFilterMode"]');
+        filterModeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => this.handleFilterModeChange(e));
+        });
+        
+        // Обработчик для кнопки Browse директории
+        const browseSourceDirectory = document.getElementById('browseSourceDirectory');
+        if (browseSourceDirectory) {
+            browseSourceDirectory.addEventListener('click', (e) => this.handleBrowseSourceDirectory(e));
+        }
+    }
+    
+    async handleBrowseSourceDirectory(event) {
+        event.preventDefault();
+        // Открываем простой модальный диалог для просмотра директорий
+        const currentPath = document.getElementById('scheduleSourceDirectory')?.value || '';
+        const selectedPath = await this.showDirectoryBrowser(currentPath);
+        if (selectedPath !== null && selectedPath !== undefined) {
+            document.getElementById('scheduleSourceDirectory').value = selectedPath;
+        }
+    }
+    
+    async showDirectoryBrowser(initialPath = '') {
+        // Используем стилизованное модальное окно для ввода пути
+        const result = await showPromptModal(
+            'Выбор директории',
+            'Введите относительный путь к директории (например, "backups/vm1" или "folder1/subfolder2").<br><small class="text-muted">Оставьте пустым для сканирования всей NFS директории.</small>',
+            'Относительный путь',
+            initialPath || '',
+            'text',
+            'Выбрать',
+            'Отмена'
+        );
+        return result || null;
     }
 
     setupFilterEvents() {
@@ -68,7 +104,11 @@ export class SchedulerEvents {
         const intervalLabel = document.getElementById('intervalLabel');
         
         if (cronSection) {
-            cronSection.style.display = isCron ? 'block' : 'none';
+            if (isCron) {
+                cronSection.classList.remove('d-none');
+            } else {
+                cronSection.classList.add('d-none');
+            }
         }
         if (intervalLabel) {
             intervalLabel.textContent = isCron ? 'Cron Expression' : 'Interval';
@@ -123,10 +163,35 @@ export class SchedulerEvents {
             interval: interval.toString(),
             enabled: document.getElementById('scheduleEnabled')?.checked || true
         };
+        
+        // Добавляем config_id если выбран
+        const configSelector = document.getElementById('schedulerConfigSelector');
+        if (configSelector && configSelector.value) {
+            formData.config_id = parseInt(configSelector.value);
+        }
 
-        const categories = this.getSelectedCategories();
-        if (categories.length > 0) {
-            formData.categories = categories;
+        // Определяем режим фильтрации
+        const filterMode = document.querySelector('input[name="scheduleFilterMode"]:checked')?.value || 'categories';
+        
+        if (filterMode === 'extensions') {
+            const extensionsInput = document.getElementById('scheduleFileExtensions')?.value.trim();
+            if (extensionsInput) {
+                const extensions = extensionsInput.split(',').map(ext => ext.trim()).filter(ext => ext);
+                if (extensions.length > 0) {
+                    formData.file_extensions = extensions;
+                }
+            }
+        } else {
+            const categories = this.getSelectedCategories();
+            if (categories.length > 0) {
+                formData.categories = categories;
+            }
+        }
+        
+        // Добавляем source_directory если указан
+        const sourceDirectory = document.getElementById('scheduleSourceDirectory')?.value.trim();
+        if (sourceDirectory) {
+            formData.source_directory = sourceDirectory;
         }
         
         try {
@@ -141,12 +206,18 @@ export class SchedulerEvents {
                 
                 // Reset to default values
                 document.getElementById('scheduleType').value = 'interval';
-                document.getElementById('cronSection').style.display = 'none';
+                document.getElementById('cronSection').classList.add('d-none');
                 document.getElementById('intervalLabel').textContent = 'Interval';
                 document.getElementById('scheduleIntervalValue').value = '1';
                 document.getElementById('scheduleIntervalUnit').value = 'hours';
                 document.getElementById('scheduleEnabled').checked = true;
                 this.resetCategorySelection();
+                
+                // Сбрасываем поле расширений
+                const extensionsInput = document.getElementById('scheduleFileExtensions');
+                if (extensionsInput) {
+                    extensionsInput.value = '';
+                }
                 
                 await this.app.loadSchedules();
             } else {
@@ -186,5 +257,25 @@ export class SchedulerEvents {
         document.querySelectorAll('.schedule-category').forEach(input => {
             input.checked = true;
         });
+        // Сбрасываем режим фильтрации
+        const categoriesRadio = document.getElementById('filterModeCategories');
+        if (categoriesRadio) {
+            categoriesRadio.checked = true;
+        }
+        this.handleFilterModeChange({ target: categoriesRadio });
+    }
+    
+    handleFilterModeChange(event) {
+        const mode = event.target.value;
+        const categoriesRow = document.getElementById('categoriesRow');
+        const extensionsRow = document.getElementById('extensionsRow');
+        
+        if (mode === 'extensions') {
+            if (categoriesRow) categoriesRow.classList.add('d-none');
+            if (extensionsRow) extensionsRow.classList.remove('d-none');
+        } else {
+            if (categoriesRow) categoriesRow.classList.remove('d-none');
+            if (extensionsRow) extensionsRow.classList.add('d-none');
+        }
     }
 }

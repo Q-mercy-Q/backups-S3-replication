@@ -1,24 +1,5 @@
 {
   "schedules": {},
   "history": [
-    {
-      "id": "schedule_a4749dbe_20251120_170840",
-      "schedule_id": "schedule_a4749dbe",
-      "schedule_name": "123",
-      "start_time": "2025-11-20T17:08:40.201648",
-      "status": "running",
-      "files_processed": 0,
-      "files_uploaded": 0,
-      "files_failed": 0,
-      "total_size": 0,
-      "uploaded_size": 0,
-      "duration": 0.0,
-      "error": null,
-      "end_time": null,
-      "success_rate": 0.0,
-      "duration_formatted": "0.0s",
-      "total_size_formatted": "0 B",
-      "uploaded_size_formatted": "0 B"
-    }
   ]
 }

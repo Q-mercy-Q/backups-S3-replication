@@ -156,7 +156,14 @@ class SchedulerApp {
             return;
         }
 
-        if (!confirm('Are you sure you want to delete this schedule? This action cannot be undone.')) {
+        const confirmed = await showConfirmModal(
+            'Удаление расписания',
+            'Вы уверены, что хотите удалить это расписание?<br><small class="text-muted">Это действие нельзя отменить.</small>',
+            'Удалить',
+            'Отмена',
+            'danger'
+        );
+        if (!confirmed) {
             return;
         }
         
@@ -199,13 +206,13 @@ class SchedulerApp {
         }
 
         if (this.state.toggleDebugLogs()) {
-            debugPanel.style.display = 'block';
+            debugPanel.classList.remove('d-none');
             toggleButton.innerHTML = '<i class="fas fa-terminal me-1"></i> Hide Debug Logs';
             this.loadDebugLogs();
             // Auto-refresh debug logs every 5 seconds when visible
             this.state.debugLogsInterval = setInterval(() => this.loadDebugLogs(), 5000);
         } else {
-            debugPanel.style.display = 'none';
+            debugPanel.classList.add('d-none');
             toggleButton.innerHTML = '<i class="fas fa-terminal me-1"></i> Debug Logs';
             // Clear auto-refresh interval
             if (this.state.debugLogsInterval) {

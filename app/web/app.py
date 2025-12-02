@@ -4,6 +4,9 @@ import atexit
 from flask import Flask
 from flask_socketio import SocketIO
 
+from app.auth import init_auth
+from app.db import SessionLocal, init_db
+
 # Отключаем лишние логи Flask и SocketIO
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('engineio').setLevel(logging.WARNING)
@@ -16,6 +19,13 @@ def create_app():
                 static_folder='static')
     app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 's3-upload-manager-secret-key')
     app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+
+    init_db()
+    init_auth(app)
+
+    @app.teardown_appcontext
+    def shutdown_session(exception=None):
+        SessionLocal.remove()
     
     return app
 

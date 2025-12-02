@@ -13,6 +13,10 @@ from app.services.upload_manager import upload_files
 from app.services.job_scheduler import JobScheduler
 from app.utils.debug_logger import DebugLogger
 from app.utils.schedule_storage import ScheduleStorage
+from app.utils.sync_history_db import (
+    create_sync_history, update_sync_history, get_sync_history as get_sync_history_db,
+    convert_db_to_dataclass
+)
 
 class SchedulerService:
     """Основной сервис управления расписаниями"""
@@ -23,7 +27,6 @@ class SchedulerService:
         self.debug_logger = DebugLogger()
         
         self.schedules: Dict[str, Schedule] = {}
-        self.sync_history: List[SyncHistory] = []
         self.max_history_entries = 100
         
         # Добавляем ссылку на socketio для отправки обновлений
@@ -37,13 +40,13 @@ class SchedulerService:
         self.socketio = socketio
     
     def load_schedules(self):
-        """Загрузка расписаний"""
-        self.schedules, self.sync_history = self.storage.load_schedules()
-        self.debug_logger.info(f"Loaded {len(self.schedules)} schedules and {len(self.sync_history)} history entries")
+        """Загрузка расписаний (история теперь в БД)"""
+        self.schedules, _ = self.storage.load_schedules()  # История больше не загружается из JSON
+        self.debug_logger.info(f"Loaded {len(self.schedules)} schedules (history is in DB)")
     
     def save_schedules(self):
-        """Сохранение расписаний"""
-        self.storage.save_schedules(self.schedules, self.sync_history, self.max_history_entries)
+        """Сохранение расписаний (история теперь в БД)"""
+        self.storage.save_schedules(self.schedules, [], self.max_history_entries)  # История больше не сохраняется в JSON
     
     def add_schedule(
         self,
@@ -52,7 +55,11 @@ class SchedulerService:
         schedule_type: str,
         interval: str,
         enabled: bool = True,
-        categories: Optional[List[str]] = None
+        categories: Optional[List[str]] = None,
+        file_extensions: Optional[List[str]] = None,
+        config_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+        source_directory: Optional[str] = None
     ) -> bool:
         """Добавление нового расписания"""
         try:
@@ -72,7 +79,11 @@ class SchedulerService:
                 schedule_type=schedule_type,
                 interval=interval,
                 enabled=enabled,
-                categories=categories or None
+                categories=categories or None,
+                file_extensions=file_extensions or None,
+                config_id=config_id,
+                user_id=user_id,
+                source_directory=source_directory
             )
             
             # Валидация расписания
@@ -140,23 +151,30 @@ class SchedulerService:
         self.debug_logger.info(f"=== 🚀 STARTING SCHEDULED SYNC: {schedule.name} ({schedule.id}) ===")
         self.debug_logger.info(f"📅 Schedule details: type={schedule.schedule_type.value}, interval={schedule.interval}, enabled={schedule.enabled}")
         
-        # Создаем запись в истории
-        history_entry = SyncHistory(
-            id=f"{schedule.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-            schedule_id=schedule.id,
-            schedule_name=schedule.name,
-            start_time=datetime.now().isoformat(),
-            status='running'
-        )
+        # Получаем user_id и config_id из расписания
+        user_id = schedule.user_id
+        config_id = schedule.config_id
         
-        self.sync_history.append(history_entry)
-        self.save_schedules()
-        self.debug_logger.info("✅ History entry created and saved")
+        if not user_id:
+            self.debug_logger.error(f"❌ Schedule {schedule.id} has no user_id! Cannot run sync.")
+            return
         
-        # Сохраняем оригинальное состояние статистики ДО try блока
+        self.debug_logger.info(f"👤 Using user_id={user_id}, config_id={config_id}")
+        
+        # Создаем запись в истории в БД
+        history_id = None
         original_stats = None
         
         try:
+            history_id = create_sync_history(
+                schedule_id=schedule.id,
+                schedule_name=schedule.name,
+                user_id=user_id,
+                status='running'
+            )
+            self.debug_logger.info(f"✅ History entry created in DB with id={history_id}")
+        
+            # Сохраняем оригинальное состояние статистики ДО try блока
             # Сохраняем текущее состояние статистики
             original_stats = UploadStats(
                 total_files=upload_stats.total_files,
@@ -172,28 +190,51 @@ class SchedulerService:
             )
             
             # Шаг 1: Инициализация статистики
-            self._init_upload_stats()
+            self._init_upload_stats(user_id=user_id)
             self.debug_logger.info(" Upload stats initialized")
             
             # Отправляем начальное обновление статистики
             self._send_stats_update()
             
-            # Шаг 2: Валидация окружения
+            # Шаг 2: Валидация окружения с использованием конфигурации пользователя
             self.debug_logger.info("🔧 Validating environment...")
-            self._validate_environment()
+            self._validate_environment(user_id=user_id)
             self.debug_logger.info(" Environment validation passed")
             
-            # Шаг 3: Получение существующих файлов S3
-            selected_categories = schedule.categories or get_file_categories()
-            self.debug_logger.info(f" Applying categories filter: {', '.join(selected_categories)}")
+            # Шаг 3: Получение конфигурации и существующих файлов S3
+            # Используем config_id из расписания для получения конфигурации
+            current_config = get_config(user_id=user_id, config_id=config_id)
+            if config_id:
+                self.debug_logger.info(f"✅ Using specific config_id={config_id} for user_id={user_id}")
+            else:
+                self.debug_logger.info(f"✅ Using default config for user_id={user_id}")
+            
+            selected_categories = schedule.categories or get_file_categories(user_id=user_id, config_id=config_id)
+            file_extensions = schedule.file_extensions
+            
+            if file_extensions:
+                self.debug_logger.info(f" Applying file extensions filter: {', '.join(file_extensions)}")
+            elif selected_categories:
+                self.debug_logger.info(f" Applying categories filter: {', '.join(selected_categories)}")
 
             self.debug_logger.info(" Getting existing S3 files...")
-            existing_files = get_existing_s3_files()
+            existing_files = get_existing_s3_files(user_id=user_id)
             self.debug_logger.info(f" Found {len(existing_files)} existing files in S3")
             
             # Шаг 4: Сканирование файлов бэкапа
+            source_directory = schedule.source_directory  # Получаем поддиректорию из расписания
+            if source_directory:
+                self.debug_logger.info(f"📁 Using source directory: {source_directory}")
+            
             self.debug_logger.info(" Scanning backup files...")
-            files_to_upload = scan_backup_files(existing_files, selected_categories)
+            files_to_upload = scan_backup_files(
+                existing_s3_files=existing_files,
+                categories=selected_categories if not file_extensions else None,
+                file_extensions=file_extensions,
+                user_id=user_id,
+                config_id=config_id,
+                source_directory=source_directory
+            )
             self.debug_logger.info(f" Scan completed: {len(files_to_upload)} files to upload")
             
             # Обновляем статистику после сканирования
@@ -206,9 +247,15 @@ class SchedulerService:
                 # Запускаем мониторинг статистики для этой задачи
                 stats_monitor_thread = self._start_stats_monitor()
                 
-                # Шаг 5: ЗАПУСК ЗАГРУЗКИ
-                self.debug_logger.info(" CALLING upload_files()...")
-                successful, failed = upload_files(files_to_upload)
+                # Шаг 5: ЗАПУСК ЗАГРУЗКИ с использованием конфигурации
+                storage_class = current_config.get('STORAGE_CLASS', 'STANDARD')
+                self.debug_logger.info(f" CALLING upload_files() with storage_class={storage_class}...")
+                successful, failed = upload_files(
+                    files_to_upload, 
+                    user_id=user_id, 
+                    storage_class=storage_class,
+                    config_id=config_id
+                )
                 self.debug_logger.info(f" upload_files() returned: {successful} successful, {failed} failed")
                 
                 # ЖДЕМ ЗАВЕРШЕНИЯ ВСЕХ ПОТОКОВ ЗАГРУЗКИ
@@ -232,25 +279,33 @@ class SchedulerService:
                 if stats_monitor_thread and stats_monitor_thread.is_alive():
                     stats_monitor_thread.join(timeout=5)
                 
-                # Обновляем историю с актуальной статистикой
-                history_entry.mark_completed(
-                    files_uploaded=upload_stats.successful,
-                    files_failed=upload_stats.failed,
-                    total_size=upload_stats.total_bytes,
-                    uploaded_size=upload_stats.uploaded_bytes,
-                    duration=time.time() - upload_stats.start_time
-                )
+                # Обновляем историю в БД с актуальной статистикой
+                duration = time.time() - upload_stats.start_time
+                if history_id:
+                    update_sync_history(
+                        history_id=history_id,
+                        status='completed',
+                        files_uploaded=upload_stats.successful,
+                        files_failed=upload_stats.failed,
+                        total_size=upload_stats.total_bytes,
+                        uploaded_size=upload_stats.uploaded_bytes,
+                        duration=duration
+                    )
                 
-                self.debug_logger.info(f" Scheduled sync completed: {upload_stats.successful} successful, {upload_stats.failed} failed, duration: {history_entry.duration:.2f}s")
+                self.debug_logger.info(f" Scheduled sync completed: {upload_stats.successful} successful, {upload_stats.failed} failed, duration: {duration:.2f}s")
                 
             else:
-                history_entry.mark_completed(
-                    files_uploaded=0,
-                    files_failed=0,
-                    total_size=0,
-                    uploaded_size=0,
-                    duration=time.time() - upload_stats.start_time
-                )
+                if history_id:
+                    duration = time.time() - upload_stats.start_time
+                    update_sync_history(
+                        history_id=history_id,
+                        status='completed',
+                        files_uploaded=0,
+                        files_failed=0,
+                        total_size=0,
+                        uploaded_size=0,
+                        duration=duration
+                    )
                 self.debug_logger.info(" Scheduled sync: No files to upload")
             
             # Обновляем расписание
@@ -265,10 +320,13 @@ class SchedulerService:
             import traceback
             self.debug_logger.error(f" Stack trace: {traceback.format_exc()}")
             
-            if history_entry:
-                history_entry.mark_failed(
+            if history_id:
+                duration = time.time() - (upload_stats.start_time if hasattr(upload_stats, 'start_time') and upload_stats.start_time > 0 else time.time())
+                update_sync_history(
+                    history_id=history_id,
+                    status='failed',
                     error=str(e),
-                    duration=time.time() - (upload_stats.start_time if hasattr(upload_stats, 'start_time') else time.time())
+                    duration=duration
                 )
             self.save_schedules()
             
@@ -293,7 +351,7 @@ class SchedulerService:
             
             self.debug_logger.info(f"===  SCHEDULED SYNC FINISHED: {schedule.name} ===\n")
 
-    def _init_upload_stats(self):
+    def _init_upload_stats(self, user_id: Optional[int] = None):
         """Инициализация статистики загрузки"""
         upload_stats.total_files = 0
         upload_stats.successful = 0
@@ -305,13 +363,15 @@ class SchedulerService:
         upload_stats.is_running = True
         upload_stats.skipped_existing = 0
         upload_stats.skipped_time = 0
+        if user_id:
+            upload_stats.user_id = user_id
 
-    def _validate_environment(self):
-        """Валидация окружения"""
-        validate_environment()
+    def _validate_environment(self, user_id: Optional[int] = None):
+        """Валидация окружения с использованием конфигурации пользователя"""
+        validate_environment(user_id=user_id)
         
-        if not test_connection():
-            raise Exception("S3 connection test failed")
+        if not test_connection(user_id=user_id):
+            raise Exception(f"S3 connection test failed for user_id={user_id}")
 
     def _start_stats_monitor(self):
         """Запуск мониторинга статистики для запланированной задачи"""
@@ -342,38 +402,27 @@ class SchedulerService:
         except Exception as e:
             self.debug_logger.error(f"Error sending stats update: {e}")
 
-    def get_sync_history(self, limit: int = 50, schedule_id: Optional[str] = None, period: str = 'all') -> List[SyncHistory]:
-        """Получение истории синхронизаций с фильтрами"""
-        filtered_history = self.sync_history.copy()
+    def get_sync_history(self, limit: int = 50, schedule_id: Optional[str] = None, period: str = 'all', user_id: Optional[int] = None) -> List[SyncHistory]:
+        """Получение истории синхронизаций с фильтрами из БД"""
+        # Получаем историю из БД
+        db_history = get_sync_history_db(
+            schedule_id=schedule_id if schedule_id and schedule_id != 'all' else None,
+            user_id=user_id,
+            limit=limit,
+            period=period
+        )
         
-        # Фильтр по расписанию
-        if schedule_id and schedule_id != 'all':
-            filtered_history = [h for h in filtered_history if h.schedule_id == schedule_id]
-        
-        # Фильтр по периоду времени
-        if period != 'all':
-            now = datetime.now()
-            if period == 'today':
-                start_date = datetime(now.year, now.month, now.day)
-                filtered_history = [h for h in filtered_history if datetime.fromisoformat(h.start_time.replace('Z', '+00:00')) >= start_date]
-            elif period == 'week':
-                start_date = now - timedelta(days=now.weekday())
-                start_date = datetime(start_date.year, start_date.month, start_date.day)
-                filtered_history = [h for h in filtered_history if datetime.fromisoformat(h.start_time.replace('Z', '+00:00')) >= start_date]
-            elif period == 'month':
-                start_date = datetime(now.year, now.month, 1)
-                filtered_history = [h for h in filtered_history if datetime.fromisoformat(h.start_time.replace('Z', '+00:00')) >= start_date]
-        
-        # Сортируем по времени и ограничиваем количество
-        filtered_history.sort(key=lambda x: x.start_time)
-        return filtered_history[-limit:]
+        # Конвертируем в dataclass для обратной совместимости
+        return [convert_db_to_dataclass(entry) for entry in db_history]
 
     def get_schedule_stats(self, schedule_id: str) -> dict:
-        """Получение статистики для расписания"""
-        schedule_history = [h for h in self.sync_history if h.schedule_id == schedule_id]
+        """Получение статистики для расписания из БД"""
+        schedule_history_db = get_sync_history_db(schedule_id=schedule_id, limit=1000)
         
-        if not schedule_history:
+        if not schedule_history_db:
             return {}
+        
+        schedule_history = [convert_db_to_dataclass(h) for h in schedule_history_db]
             
         successful_runs = [h for h in schedule_history if h.status.value == 'completed']
         failed_runs = [h for h in schedule_history if h.status.value == 'failed']
@@ -399,15 +448,19 @@ class SchedulerService:
         }
 
     def get_all_schedules_stats(self) -> dict:
-        """Получение статистики для всех расписаний"""
+        """Получение статистики для всех расписаний из БД"""
+        # Получаем всю историю из БД
+        all_history_db = get_sync_history_db(limit=10000)
+        all_history = [convert_db_to_dataclass(h) for h in all_history_db]
+        
         stats = {
             'total_schedules': len(self.schedules),
             'enabled_schedules': len([s for s in self.schedules.values() if s.enabled]),
-            'total_runs': len(self.sync_history),
-            'successful_runs': len([h for h in self.sync_history if h.status.value == 'completed']),
-            'failed_runs': len([h for h in self.sync_history if h.status.value == 'failed']),
-            'total_files_uploaded': sum(h.files_uploaded for h in self.sync_history if hasattr(h, 'files_uploaded')),
-            'total_data_uploaded_bytes': sum(h.uploaded_size for h in self.sync_history if hasattr(h, 'uploaded_size')),
+            'total_runs': len(all_history),
+            'successful_runs': len([h for h in all_history if h.status.value == 'completed']),
+            'failed_runs': len([h for h in all_history if h.status.value == 'failed']),
+            'total_files_uploaded': sum(h.files_uploaded for h in all_history if hasattr(h, 'files_uploaded')),
+            'total_data_uploaded_bytes': sum(h.uploaded_size for h in all_history if hasattr(h, 'uploaded_size')),
         }
         
         # Вычисляем процент успешных запусков
@@ -553,21 +606,30 @@ class SchedulerService:
         }
 
     def cleanup_old_history(self, max_age_days: int = 30) -> int:
-        """Очистка старой истории"""
-        cutoff_date = datetime.now() - timedelta(days=max_age_days)
-        initial_count = len(self.sync_history)
+        """Очистка старой истории из БД"""
+        from datetime import timedelta
+        from app.db import session_scope
+        from app.models.db_models import SyncHistoryDB
         
-        self.sync_history = [
-            h for h in self.sync_history 
-            if datetime.fromisoformat(h.start_time.replace('Z', '+00:00')) >= cutoff_date
-        ]
+        cutoff_date = datetime.utcnow() - timedelta(days=max_age_days)
         
-        removed_count = initial_count - len(self.sync_history)
-        if removed_count > 0:
-            self.save_schedules()
-            self.debug_logger.info(f" Cleaned up {removed_count} old history entries")
-        
-        return removed_count
+        with session_scope() as session:
+            # Получаем количество записей до удаления
+            initial_count = session.query(SyncHistoryDB).filter(
+                SyncHistoryDB.start_time < cutoff_date
+            ).count()
+            
+            # Удаляем старые записи
+            deleted_count = session.query(SyncHistoryDB).filter(
+                SyncHistoryDB.start_time < cutoff_date
+            ).delete()
+            
+            # session_scope сам делает commit, поэтому удаляем session.commit()
+            
+            if deleted_count > 0:
+                self.debug_logger.info(f" Cleaned up {deleted_count} old history entries from DB")
+            
+            return deleted_count
 
 # Глобальный экземпляр планировщика
 scheduler_service = SchedulerService()

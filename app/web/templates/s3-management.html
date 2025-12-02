@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3 Management - S3 Backup Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-cloud-upload-alt me-2"></i>S3 Backup Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('upload_manager_page') }}">
+                            <i class="fas fa-upload me-1"></i>Upload Manager
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('scheduler_page') }}">
+                            <i class="fas fa-clock me-1"></i>Scheduler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_browser_page') }}">
+                            <i class="fas fa-cloud me-1"></i>S3 Browser
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('s3_management_page') }}">
+                            <i class="fas fa-cog me-1"></i>S3 Management
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item me-2">
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('config_page') }}" title="Конфигурация">
+                            <i class="fas fa-sliders-h me-1"></i>Configuration
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item me-2">
+                        <a class="btn btn-warning btn-sm" href="{{ url_for('admin_dashboard') }}" title="Админ-панель">
+                            <i class="fas fa-user-shield me-1"></i>Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ current_user.username }}</span>
+                            {% if current_user.is_admin %}
+                                <span class="badge bg-warning text-dark ms-2">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-2"></i>Личный кабинет
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('config_page') }}">
+                                <i class="fas fa-sliders-h me-2"></i>Configuration
+                            </a></li>
+                            {% if current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-user-shield me-2"></i>Админ-панель
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Выход
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid page-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-2"><i class="fas fa-cog me-2"></i>S3 Management</h1>
+                <p class="text-muted mb-0">Advanced S3 storage management and configuration</p>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs mb-3" id="managementTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="buckets-tab" data-bs-toggle="tab" data-bs-target="#buckets" type="button" role="tab">
+                    <i class="fas fa-folder me-2"></i>Buckets
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="versioning-tab" data-bs-toggle="tab" data-bs-target="#versioning" type="button" role="tab">
+                    <i class="fas fa-history me-2"></i>Versioning
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="lifecycle-tab" data-bs-toggle="tab" data-bs-target="#lifecycle" type="button" role="tab">
+                    <i class="fas fa-calendar-alt me-2"></i>Lifecycle
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="policies-tab" data-bs-toggle="tab" data-bs-target="#policies" type="button" role="tab">
+                    <i class="fas fa-shield-alt me-2"></i>Policies
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cors-tab" data-bs-toggle="tab" data-bs-target="#cors" type="button" role="tab">
+                    <i class="fas fa-globe me-2"></i>CORS
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tags-tab" data-bs-toggle="tab" data-bs-target="#tags" type="button" role="tab">
+                    <i class="fas fa-tags me-2"></i>Tags
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                    <i class="fas fa-chart-bar me-2"></i>Analytics
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="managementTabContent">
+            <!-- Buckets Tab -->
+            <div class="tab-pane fade show active" id="buckets" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0"><i class="fas fa-folder me-2"></i>Bucket Management</h5>
+                        <button class="btn btn-primary btn-sm" id="createBucketBtn">
+                            <i class="fas fa-plus me-1"></i>Create Bucket
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="bucketsList" class="row">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2">Loading buckets...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Versioning Tab -->
+            <div class="tab-pane fade" id="versioning" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-history me-2"></i>Versioning Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bucket-tiles-container" id="versioningBucketTiles">
+                            <div class="bucket-tiles-header">
+                                <h6 class="mb-0"><i class="fas fa-folder me-2"></i>Select Bucket</h6>
+                                <input type="text" class="form-control bucket-tiles-search" placeholder="Search buckets..." id="versioningBucketSearch" onkeyup="filterBucketTiles('versioning')">
+                            </div>
+                            <div class="bucket-tiles-grid" id="versioningBucketGrid"></div>
+                        </div>
+                        <select class="form-select mb-3 d-none" id="versioningBucketSelect">
+                            <option value="">-- Select a bucket --</option>
+                        </select>
+                        <div id="versioningConfig" class="bucket-config-section">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="enableVersioning">
+                                <label class="form-check-label" for="enableVersioning">
+                                    Enable Versioning
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="enableMfaDelete">
+                                <label class="form-check-label" for="enableMfaDelete">
+                                    Require MFA for Delete Operations
+                                </label>
+                            </div>
+                            <button class="btn btn-primary" id="saveVersioningBtn">
+                                <i class="fas fa-save me-1"></i>Save Versioning Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lifecycle Tab -->
+            <div class="tab-pane fade" id="lifecycle" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-calendar-alt me-2"></i>Lifecycle Policies</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bucket-tiles-container" id="lifecycleBucketTiles">
+                            <div class="bucket-tiles-header">
+                                <h6 class="mb-0"><i class="fas fa-folder me-2"></i>Select Bucket</h6>
+                                <input type="text" class="form-control bucket-tiles-search" placeholder="Search buckets..." id="lifecycleBucketSearch" onkeyup="filterBucketTiles('lifecycle')">
+                            </div>
+                            <div class="bucket-tiles-grid" id="lifecycleBucketGrid"></div>
+                        </div>
+                        <select class="form-select mb-3 d-none" id="lifecycleBucketSelect">
+                            <option value="">-- Select a bucket --</option>
+                        </select>
+                        <div id="lifecycleConfig" class="bucket-config-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="alert alert-info mb-0 me-3">
+                                    <i class="fas fa-info-circle me-2"></i>Configure lifecycle rules to automatically manage object transitions and expirations.
+                                </div>
+                                <button class="btn btn-success" id="addLifecycleRuleBtn">
+                                    <i class="fas fa-plus me-1"></i>Add Rule
+                                </button>
+                            </div>
+                            <div id="lifecycleRulesList" class="mb-3">
+                                <!-- Lifecycle rules will be dynamically added here -->
+                            </div>
+                            <button class="btn btn-primary" id="saveLifecycleBtn">
+                                <i class="fas fa-save me-1"></i>Save Lifecycle Policy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Policies Tab -->
+            <div class="tab-pane fade" id="policies" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-shield-alt me-2"></i>Bucket Policies</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bucket-tiles-container" id="policyBucketTiles">
+                            <div class="bucket-tiles-header">
+                                <h6 class="mb-0"><i class="fas fa-folder me-2"></i>Select Bucket</h6>
+                                <input type="text" class="form-control bucket-tiles-search" placeholder="Search buckets..." id="policyBucketSearch" onkeyup="filterBucketTiles('policy')">
+                            </div>
+                            <div class="bucket-tiles-grid" id="policyBucketGrid"></div>
+                        </div>
+                        <select class="form-select mb-3 d-none" id="policyBucketSelect">
+                            <option value="">-- Select a bucket --</option>
+                        </select>
+                        <div id="policyConfig" class="bucket-config-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="alert alert-info mb-0 me-3">
+                                    <i class="fas fa-info-circle me-2"></i>Bucket policies define access permissions. You can use templates or edit JSON directly.
+                                </div>
+                                <button class="btn btn-success btn-sm" id="usePolicyTemplateBtnHeader">
+                                    <i class="fas fa-file-alt me-1"></i>Use Template
+                                </button>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="policyViewMode" checked>
+                                <label class="form-check-label" for="policyViewMode">
+                                    Show JSON Editor
+                                </label>
+                            </div>
+                            <textarea class="form-control json-editor" id="bucketPolicy" rows="20" placeholder='{"Version": "2012-10-17", "Statement": []}'></textarea>
+                            <div id="policyVisualEditor" class="border rounded p-3">
+                                <p class="text-muted">Visual editor coming soon. Use "Use Template" button or enable JSON editor.</p>
+                            </div>
+                            <button class="btn btn-primary mt-3" id="savePolicyBtn">
+                                <i class="fas fa-save me-1"></i>Save Policy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CORS Tab -->
+            <div class="tab-pane fade" id="cors" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-globe me-2"></i>CORS Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bucket-tiles-container" id="corsBucketTiles">
+                            <div class="bucket-tiles-header">
+                                <h6 class="mb-0"><i class="fas fa-folder me-2"></i>Select Bucket</h6>
+                                <input type="text" class="form-control bucket-tiles-search" placeholder="Search buckets..." id="corsBucketSearch" onkeyup="filterBucketTiles('cors')">
+                            </div>
+                            <div class="bucket-tiles-grid" id="corsBucketGrid"></div>
+                        </div>
+                        <select class="form-select mb-3 d-none" id="corsBucketSelect">
+                            <option value="">-- Select a bucket --</option>
+                        </select>
+                        <div id="corsConfig" class="bucket-config-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="alert alert-info mb-0 me-3">
+                                    <i class="fas fa-info-circle me-2"></i>Configure Cross-Origin Resource Sharing (CORS) rules.
+                                </div>
+                                <button class="btn btn-success" id="addCorsRuleBtn">
+                                    <i class="fas fa-plus me-1"></i>Add CORS Rule
+                                </button>
+                            </div>
+                            <div id="corsRulesList" class="mb-3">
+                                <!-- CORS rules will be dynamically added here -->
+                            </div>
+                            <button class="btn btn-primary" id="saveCorsBtn">
+                                <i class="fas fa-save me-1"></i>Save CORS Rules
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tags Tab -->
+            <div class="tab-pane fade" id="tags" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-tags me-2"></i>Bucket Tags</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bucket-tiles-container" id="tagsBucketTiles">
+                            <div class="bucket-tiles-header">
+                                <h6 class="mb-0"><i class="fas fa-folder me-2"></i>Select Bucket</h6>
+                                <input type="text" class="form-control bucket-tiles-search" placeholder="Search buckets..." id="tagsBucketSearch" onkeyup="filterBucketTiles('tags')">
+                            </div>
+                            <div class="bucket-tiles-grid" id="tagsBucketGrid"></div>
+                        </div>
+                        <select class="form-select mb-3 d-none" id="tagsBucketSelect">
+                            <option value="">-- Select a bucket --</option>
+                        </select>
+                        <div id="tagsConfig" class="bucket-config-section">
+                            <div id="bucketTagsList" class="mb-3">
+                                <!-- Tags will be dynamically added here -->
+                            </div>
+                            <div class="d-flex gap-2 mb-3">
+                                <input type="text" class="form-control" id="tagKey" placeholder="Tag Key">
+                                <input type="text" class="form-control" id="tagValue" placeholder="Tag Value">
+                                <button class="btn btn-secondary" id="addTagBtn">
+                                    <i class="fas fa-plus me-1"></i>Add Tag
+                                </button>
+                            </div>
+                            <button class="btn btn-primary" id="saveTagsBtn">
+                                <i class="fas fa-save me-1"></i>Save Tags
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-pane fade" id="analytics" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Bucket Analytics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bucket-tiles-container" id="analyticsBucketTiles">
+                            <div class="bucket-tiles-header">
+                                <h6 class="mb-0"><i class="fas fa-folder me-2"></i>Select Bucket</h6>
+                                <input type="text" class="form-control bucket-tiles-search" placeholder="Search buckets..." id="analyticsBucketSearch" onkeyup="filterBucketTiles('analytics')">
+                            </div>
+                            <div class="bucket-tiles-grid" id="analyticsBucketGrid"></div>
+                        </div>
+                        <select class="form-select mb-3 d-none" id="analyticsBucketSelect">
+                            <option value="">-- Select a bucket --</option>
+                        </select>
+                        <div id="analyticsContent" class="bucket-config-section">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Total Size</h6>
+                                            <h3 id="analyticsTotalSize" class="text-primary">-</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Object Count</h6>
+                                            <h3 id="analyticsObjectCount" class="text-info">-</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Storage Classes Distribution</h6>
+                                <div id="storageClassesChart" class="mt-2">
+                                    <!-- Storage classes will be displayed here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Create Bucket Modal -->
+    <div class="modal fade" id="createBucketModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-folder-plus me-2"></i>Create New Bucket</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newBucketName" class="form-label">Bucket Name</label>
+                        <input type="text" class="form-control" id="newBucketName" placeholder="Enter bucket name">
+                        <small class="form-text text-muted">Bucket names must be unique and follow S3 naming conventions.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bucketLocation" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="bucketLocation" value="us-east-1" placeholder="us-east-1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmCreateBucketBtn">
+                        <i class="fas fa-check me-1"></i>Create Bucket
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lifecycle Rule Modal -->
+    <div class="modal fade" id="lifecycleRuleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calendar-alt me-2"></i>Lifecycle Rule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="lifecycleRuleId" class="form-label">Rule ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="lifecycleRuleId" placeholder="e.g., transition-to-glacier" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lifecycleRuleStatus" class="form-label">Status</label>
+                        <select class="form-select" id="lifecycleRuleStatus">
+                            <option value="Enabled">Enabled</option>
+                            <option value="Disabled">Disabled</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lifecyclePrefix" class="form-label">Prefix (Optional)</label>
+                        <input type="text" class="form-control" id="lifecyclePrefix" placeholder="e.g., logs/">
+                        <small class="form-text text-muted">Apply rule only to objects with this prefix</small>
+                    </div>
+                    <hr>
+                    <h6>Transitions</h6>
+                    <div id="lifecycleTransitionsList" class="mb-3">
+                        <!-- Transitions will be added here -->
+                    </div>
+                    <button type="button" class="btn btn-sm btn-secondary mb-3" id="addTransitionBtn">
+                        <i class="fas fa-plus me-1"></i>Add Transition
+                    </button>
+                    <hr>
+                    <h6>Expiration</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="expirationDays" class="form-label">Days</label>
+                            <input type="number" class="form-control" id="expirationDays" min="1" placeholder="Days">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="expirationDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="expirationDate">
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="deleteMarkerExpiration">
+                        <label class="form-check-label" for="deleteMarkerExpiration">
+                            Expire Delete Markers
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveLifecycleRuleBtn">
+                        <i class="fas fa-save me-1"></i>Save Rule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CORS Rule Modal -->
+    <div class="modal fade" id="corsRuleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-globe me-2"></i>CORS Rule</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="corsAllowedOrigins" class="form-label">Allowed Origins <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="corsAllowedOrigins" placeholder="e.g., https://example.com or *" required>
+                        <small class="form-text text-muted">Comma-separated list of origins or * for all</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Allowed Methods <span class="text-danger">*</span></label>
+                        <div class="row">
+                            <div class="col-md-3 mb-2"><label class="form-check-label"><input type="checkbox" class="form-check-input cors-method" value="GET"> GET</label></div>
+                            <div class="col-md-3 mb-2"><label class="form-check-label"><input type="checkbox" class="form-check-input cors-method" value="PUT"> PUT</label></div>
+                            <div class="col-md-3 mb-2"><label class="form-check-label"><input type="checkbox" class="form-check-input cors-method" value="POST"> POST</label></div>
+                            <div class="col-md-3 mb-2"><label class="form-check-label"><input type="checkbox" class="form-check-input cors-method" value="DELETE"> DELETE</label></div>
+                            <div class="col-md-3 mb-2"><label class="form-check-label"><input type="checkbox" class="form-check-input cors-method" value="HEAD"> HEAD</label></div>
+                            <div class="col-md-3 mb-2"><label class="form-check-label"><input type="checkbox" class="form-check-input cors-method" value="PATCH"> PATCH</label></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="corsAllowedHeaders" class="form-label">Allowed Headers</label>
+                        <input type="text" class="form-control" id="corsAllowedHeaders" placeholder="e.g., * or Content-Type,Authorization">
+                        <small class="form-text text-muted">Comma-separated list of headers or * for all</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="corsExposedHeaders" class="form-label">Exposed Headers</label>
+                        <input type="text" class="form-control" id="corsExposedHeaders" placeholder="e.g., ETag">
+                        <small class="form-text text-muted">Comma-separated list of headers</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="corsMaxAge" class="form-label">Max Age (seconds)</label>
+                        <input type="number" class="form-control" id="corsMaxAge" value="3000" min="0" placeholder="3000">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveCorsRuleBtn">
+                        <i class="fas fa-save me-1"></i>Save Rule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transition Modal -->
+    <div class="modal fade" id="transitionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-exchange-alt me-2"></i>Storage Transition</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="transitionDays" class="form-label">Days <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="transitionDays" min="1" required>
+                        <small class="form-text text-muted">Number of days after creation</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transitionStorageClass" class="form-label">Storage Class <span class="text-danger">*</span></label>
+                        <select class="form-select" id="transitionStorageClass" required>
+                            <option value="STANDARD_IA">STANDARD_IA</option>
+                            <option value="ONEZONE_IA">ONEZONE_IA</option>
+                            <option value="INTELLIGENT_TIERING">INTELLIGENT_TIERING</option>
+                            <option value="GLACIER">GLACIER</option>
+                            <option value="DEEP_ARCHIVE">DEEP_ARCHIVE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveTransitionBtn">
+                        <i class="fas fa-save me-1"></i>Add Transition
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bucket Policy Template Modal -->
+    <div class="modal fade" id="policyTemplateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-shield-alt me-2"></i>Policy Template</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="policyTemplateSelect" class="form-label">Select Template</label>
+                        <select class="form-select" id="policyTemplateSelect">
+                            <option value="">-- Select a template --</option>
+                            <option value="public-read">Public Read</option>
+                            <option value="public-read-write">Public Read-Write</option>
+                            <option value="private">Private</option>
+                            <option value="authenticated-read">Authenticated Read</option>
+                        </select>
+                    </div>
+                        <div id="policyTemplatePreview">
+                        <label class="form-label">Preview:</label>
+                        <pre class="bg-light p-3 rounded" id="policyTemplateContent"></pre>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="usePolicyTemplateBtn">
+                        <i class="fas fa-check me-1"></i>Use Template
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create S3 User Modal -->
+    <div class="modal fade" id="createUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Create S3 User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newUserName" class="form-label">User Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newUserName" placeholder="Enter user name" required>
+                        <small class="form-text text-muted">User name must be unique and follow IAM naming conventions.</small>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="createAccessKey" checked>
+                        <label class="form-check-label" for="createAccessKey">
+                            Create Access Key immediately
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmCreateUserBtn">
+                        <i class="fas fa-check me-1"></i>Create User
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Keys Modal -->
+    <div class="modal fade" id="accessKeysModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-key me-2"></i>Access Keys for <span id="accessKeysUserName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <p class="mb-0">Manage access keys for this user</p>
+                        <button class="btn btn-success btn-sm" id="createAccessKeyBtn">
+                            <i class="fas fa-plus me-1"></i>Create New Key
+                        </button>
+                    </div>
+                    <div id="accessKeysList">
+                        <!-- Access keys will be listed here -->
+                    </div>
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i><strong>Important:</strong> Secret access keys are shown only once when created. Make sure to save them securely.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/s3-management.js') }}"></script>
+</body>
+</html>
+

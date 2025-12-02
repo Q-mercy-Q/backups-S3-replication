@@ -54,7 +54,9 @@ export class SchedulerAPI {
             url += `&period=${period}`;
         }
         
-        return await this.request(url);
+        const result = await this.request(url);
+        // API возвращает {status: 'success', history: [...]}, нужно извлечь массив истории
+        return result.history || [];
     }
 
     async loadDebugLogs(level = 'INFO', limit = 100) {

@@ -25,6 +25,7 @@ services:
       - UPLOAD_RETRIES=3
       - RETRY_DELAY=5
       - FLASK_SECRET_KEY=your-secret-key-for-flask
+      - DATABASE_URL='postgresql+psycopg://postgres:45qazxswDF20!&@192.168.36.182:5432/postgres'
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
@@ -38,7 +39,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
- 
+volumes:
   # nginx:
   #   image: nginx:alpine
   #   container_name: s3-backup-manager-nginx

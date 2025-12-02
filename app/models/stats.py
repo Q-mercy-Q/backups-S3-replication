@@ -16,6 +16,7 @@ class UploadStats:
     is_running: bool = False
     skipped_existing: int = 0
     skipped_time: int = 0
+    user_id: int = None  # ID пользователя, выполняющего загрузку
     
     def __post_init__(self):
         if self.file_start_times is None:
@@ -37,6 +38,7 @@ class UploadStats:
         self.is_running = False
         self.skipped_existing = 0
         self.skipped_time = 0
+        self.user_id = None
     
     def get_progress_percent(self) -> float:
         """Получение процента выполнения"""

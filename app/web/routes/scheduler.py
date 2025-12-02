@@ -9,6 +9,7 @@ from typing import Dict, Any, Tuple
 from datetime import datetime
 
 import humanize
+from flask_login import login_required, current_user
 
 from app.services.scheduler_service import scheduler_service
 
@@ -17,11 +18,13 @@ def init_routes(app: Flask) -> None:
     """Инициализация маршрутов планировщика"""
     
     @app.route('/api/scheduler/stats')
+    @login_required
     def api_scheduler_stats():
         """API для получения статистики планировщика"""
         return _handle_scheduler_stats()
     
     @app.route('/api/scheduler/schedules', methods=['GET', 'POST'])
+    @login_required
     def api_scheduler_schedules():
         """API для работы с расписаниями"""
         if request.method == 'GET':
@@ -30,6 +33,7 @@ def init_routes(app: Flask) -> None:
             return _handle_create_schedule(app)
     
     @app.route('/api/scheduler/schedules/<schedule_id>', methods=['PUT', 'DELETE'])
+    @login_required
     def api_scheduler_schedule(schedule_id: str):
         """API для работы с конкретным расписанием"""
         if request.method == 'PUT':
@@ -38,16 +42,19 @@ def init_routes(app: Flask) -> None:
             return _handle_delete_schedule(app, schedule_id)
     
     @app.route('/api/scheduler/run/<schedule_id>', methods=['POST'])
+    @login_required
     def api_scheduler_run(schedule_id: str):
         """API для запуска расписания вручную"""
         return _handle_run_schedule(app, schedule_id)
     
     @app.route('/api/scheduler/history')
+    @login_required
     def api_scheduler_history():
         """API для получения истории синхронизаций"""
         return _handle_get_history()
     
     @app.route('/api/scheduler/debug_logs', methods=['GET', 'DELETE'])
+    @login_required
     def api_scheduler_debug_logs():
         """API для работы с отладочными логами"""
         if request.method == 'GET':
@@ -56,23 +63,10 @@ def init_routes(app: Flask) -> None:
             return _handle_clear_debug_logs(app)
     
     def _handle_scheduler_stats() -> Tuple[Dict[str, Any], int]:
-        """Обработка получения статистики планировщика"""
+        """Обработка получения статистики планировщика из БД"""
         try:
-            stats = {
-                'total_schedules': len(scheduler_service.schedules),
-                'enabled_schedules': len([s for s in scheduler_service.schedules.values() if s.enabled]),
-                'total_runs': len(scheduler_service.sync_history),
-                'successful_runs': len([h for h in scheduler_service.sync_history if h.status.value == 'completed']),
-                'failed_runs': len([h for h in scheduler_service.sync_history if h.status.value == 'failed']),
-                'total_files_uploaded': sum(h.files_uploaded for h in scheduler_service.sync_history if hasattr(h, 'files_uploaded')),
-                'total_data_uploaded': humanize.naturalsize(sum(h.uploaded_size for h in scheduler_service.sync_history if hasattr(h, 'uploaded_size'))),
-            }
-            
-            # Вычисляем процент успешных запусков
-            if stats['total_runs'] > 0:
-                stats['success_rate'] = (stats['successful_runs'] / stats['total_runs']) * 100
-            else:
-                stats['success_rate'] = 0
+            # Используем метод get_all_schedules_stats() который работает с БД
+            stats = scheduler_service.get_all_schedules_stats()
                 
             return jsonify(stats), 200
             
@@ -116,13 +110,21 @@ def init_routes(app: Flask) -> None:
             
             # Добавляем расписание
             categories = data.get('categories') if isinstance(data.get('categories'), list) else None
+            file_extensions = data.get('file_extensions') if isinstance(data.get('file_extensions'), list) else None
+            config_id = data.get('config_id')  # ID конфигурации для использования в расписании
+            source_directory = data.get('source_directory')  # Поддиректория для синхронизации
+            
             success = scheduler_service.add_schedule(
                 schedule_id=schedule_id,
                 name=data['name'],
                 schedule_type=data['type'],
                 interval=data['interval'],
                 enabled=data.get('enabled', True),
-                categories=categories
+                categories=categories,
+                file_extensions=file_extensions,
+                config_id=config_id,
+                user_id=current_user.id,  # Добавляем user_id из текущего пользователя
+                source_directory=source_directory
             )
             
             if success:
@@ -143,6 +145,9 @@ def init_routes(app: Flask) -> None:
                 
             if 'categories' in data and not isinstance(data['categories'], list):
                 data['categories'] = []
+            
+            if 'file_extensions' in data and not isinstance(data['file_extensions'], list):
+                data['file_extensions'] = []
 
             success = scheduler_service.update_schedule(schedule_id, **data)
             if success:
@@ -192,24 +197,29 @@ def init_routes(app: Flask) -> None:
             return jsonify({'status': 'error', 'message': str(e)}), 500
     
     def _handle_get_history() -> Tuple[Dict[str, Any], int]:
-        """Обработка получения истории синхронизаций"""
+        """Обработка получения истории синхронизаций из БД"""
         try:
+            from flask_login import current_user
             # Получаем параметры фильтрации
             limit = request.args.get('limit', 50, type=int)
             schedule_filter = request.args.get('schedule', 'all')
             period = request.args.get('period', 'all')
             
-            # Получаем отфильтрованную историю
+            # Получаем отфильтрованную историю из БД с user_id
             history = scheduler_service.get_sync_history(
                 limit=limit,
                 schedule_id=schedule_filter if schedule_filter != 'all' else None,
-                period=period
+                period=period,
+                user_id=current_user.id
             )
             
             # Конвертируем в словари
             history_dicts = [h.to_dict() for h in history]
             
-            return jsonify(history_dicts), 200
+            # Возвращаем как массив (для обратной совместимости) или объект
+            # Используем объект для более структурированного ответа
+            # Возвращаем как объект для структурированного ответа
+            return jsonify({'status': 'success', 'history': history_dicts}), 200
             
         except Exception as e:
             import logging

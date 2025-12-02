@@ -232,3 +232,7 @@ def setup_upload_logging(log_dir: str = "logs") -> None:
     # Не пропагируем в корневой логгер чтобы избежать дублирования
     upload_logger.propagate = False
 
+
+
+
+

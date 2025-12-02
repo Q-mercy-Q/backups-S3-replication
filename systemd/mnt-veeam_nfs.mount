@@ -1,0 +1,22 @@
+[Unit]
+Description=NFS mount for Veeam backups
+After=network-online.target
+Wants=network-online.target
+Before=remote-fs.target
+
+[Mount]
+What=172.20.129.1:/backups
+Where=/mnt/veeam_nfs
+Type=nfs
+Options=vers=4.1,soft,timeo=30,retrans=3,noatime
+
+# Альтернативные варианты опций для разных версий NFS:
+# Для NFS v3: Options=vers=3,soft,timeo=30,retrans=3,noatime
+# С hard mount (более надежно, но может зависать): Options=vers=4.1,hard,timeo=30,retrans=3
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+

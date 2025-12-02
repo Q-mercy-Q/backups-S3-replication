@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from flask_socketio import SocketIO
 
-from . import config, upload, scheduler, health, pages, files
+from . import config, upload, scheduler, health, pages, files, admin, nfs, s3_browser, s3_management
 
 
 def init_routes(app: Flask, socketio: 'SocketIO') -> None:
@@ -28,6 +28,10 @@ def init_routes(app: Flask, socketio: 'SocketIO') -> None:
     scheduler.init_routes(app)
     health.init_routes(app)
     files.init_routes(app)
+    admin.init_routes(app)
+    nfs.init_routes(app)
+    s3_browser.init_routes(app)
+    s3_management.init_routes(app)
     
     # Регистрируем обработчики ошибок
     _register_error_handlers(app)

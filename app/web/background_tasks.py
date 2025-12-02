@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 import humanize
 
+from typing import Optional, List
 from app.utils.config import upload_stats, validate_environment, get_file_categories
 from app.services.file_scanner import scan_backup_files
 from app.services.s3_client import test_connection, get_existing_s3_files
@@ -30,8 +31,21 @@ def init_app(app, socketio):
     # Запускаем мониторинг статистики
     start_stats_monitor()
 
-def run_upload():
-    """Запуск процесса загрузки в отдельном потоке"""
+def run_upload(
+    user_id: int,
+    files_to_upload: Optional[List] = None,
+    upload_mode: str = 'auto',
+    storage_class: Optional[str] = None
+):
+    """
+    Запуск процесса загрузки в отдельном потоке с конфигурацией пользователя
+    
+    Args:
+        user_id: ID пользователя для загрузки конфигурации
+        files_to_upload: Список файлов для загрузки (если None, выполняется автоматическое сканирование)
+        upload_mode: Режим загрузки ('auto' - автоматическое сканирование, 'manual' - загрузка указанных файлов)
+        storage_class: Класс хранения для загружаемых файлов (если None, используется из конфигурации)
+    """
     global upload_thread
     
     try:
@@ -39,33 +53,46 @@ def run_upload():
         upload_stats.reset()
         upload_stats.start_time = time.time()
         upload_stats.is_running = True
+        upload_stats.user_id = user_id
         
-        logging.info("=== Upload Started ===")
+        # Сохраняем storage_class в статистику
+        if storage_class:
+            upload_stats.storage_class = storage_class
+            logging.info(f"=== Upload Started (user_id: {user_id}, mode: {upload_mode}, storage_class: {storage_class}) ===")
+        else:
+            # Если не передан, используем из конфигурации
+            from app.utils.config import get_storage_class
+            storage_class = get_storage_class(user_id=user_id)
+            upload_stats.storage_class = storage_class
+            logging.info(f"=== Upload Started (user_id: {user_id}, mode: {upload_mode}, storage_class from config: {storage_class}) ===")
         
-        # Валидация окружения
-        validate_environment()
+        # Валидация окружения пользователя
+        validate_environment(user_id=user_id)
         logging.info("Environment validation successful")
         
-        # Тест соединения
-        if not test_connection():
+        # Тест соединения с конфигурацией пользователя
+        if not test_connection(user_id=user_id):
             logging.error("Connection test failed. Check credentials and endpoint.")
             return
-
-        # Получаем список существующих файлов в S3
-        logging.info("Scanning existing files in S3 bucket...")
-        existing_files = get_existing_s3_files()
         
-        # Сканируем файлы для загрузки
-        logging.info("Scanning backup files...")
-        files_to_upload = scan_backup_files(existing_files, get_file_categories())
+        # Если файлы не переданы, выполняем автоматическое сканирование
+        if files_to_upload is None or upload_mode == 'auto':
+            # Получаем список существующих файлов в S3 с конфигурацией пользователя
+            logging.info("Scanning existing files in S3 bucket...")
+            existing_files = get_existing_s3_files(user_id=user_id)
+            
+            # Сканируем файлы для загрузки с конфигурацией пользователя
+            logging.info("Scanning backup files...")
+            files_to_upload = scan_backup_files(existing_files, get_file_categories(user_id=user_id), user_id=user_id)
+        
         if not files_to_upload:
             logging.info("No files to upload. Exiting.")
             return
-
-        logging.info(f"Starting upload of {len(files_to_upload)} files")
         
-        # Запускаем загрузку
-        successful, failed = upload_files(files_to_upload)
+        logging.info(f"Starting upload of {len(files_to_upload)} files with storage_class: {storage_class}")
+        
+        # Запускаем загрузку с конфигурацией пользователя и storage_class
+        successful, failed = upload_files(files_to_upload, user_id=user_id, storage_class=storage_class)
         
         logging.info("=== Upload Finished ===")
         
@@ -76,8 +103,12 @@ def run_upload():
     finally:
         upload_stats.is_running = False
 
-def scan_files_with_config():
-    """Сканирование файлов с текущей конфигурацией"""
+def scan_files_with_config(user_id: int = None):
+    """Сканирование файлов с конфигурацией пользователя
+    
+    Args:
+        user_id: ID пользователя (если None, будет использована конфигурация по умолчанию)
+    """
     try:
         # Временно устанавливаем is_running для сканирования
         original_running = upload_stats.is_running
@@ -89,8 +120,8 @@ def scan_files_with_config():
         upload_stats.skipped_existing = 0
         upload_stats.skipped_time = 0
         
-        existing_files = get_existing_s3_files()
-        files = scan_backup_files(existing_files, get_file_categories())
+        existing_files = get_existing_s3_files(user_id=user_id)
+        files = scan_backup_files(existing_files, get_file_categories(user_id=user_id), user_id=user_id)
         
         # Восстанавливаем состояние
         upload_stats.is_running = original_running

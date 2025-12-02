@@ -23,6 +23,10 @@ class Schedule:
     next_run: Optional[str] = None
     description: Optional[str] = None
     categories: Optional[List[str]] = None
+    file_extensions: Optional[List[str]] = None  # Произвольные расширения файлов (например, ['.vbk', '.vib', '.txt'])
+    config_id: Optional[int] = None  # ID конфигурации пользователя для использования в этом расписании
+    user_id: Optional[int] = None  # ID пользователя, создавшего расписание
+    source_directory: Optional[str] = None  # Относительный путь к поддиректории для синхронизации (относительно NFS_PATH)
     
     def __post_init__(self):
         # Конвертируем строку в Enum если нужно
@@ -72,6 +76,17 @@ class Schedule:
 
         if self.categories:
             self.categories = [str(category).strip() for category in self.categories if str(category).strip()]
+        
+        if self.file_extensions:
+            # Нормализуем расширения (добавляем точку если нет)
+            normalized = []
+            for ext in self.file_extensions:
+                ext_str = str(ext).strip().lower()
+                if ext_str and not ext_str.startswith('.'):
+                    ext_str = '.' + ext_str
+                if ext_str:
+                    normalized.append(ext_str)
+            self.file_extensions = normalized if normalized else None
         
         return True
     

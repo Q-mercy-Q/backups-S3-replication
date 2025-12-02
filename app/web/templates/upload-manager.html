@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Manager - S3 Backup Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-cloud-upload-alt me-2"></i>S3 Backup Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('upload_manager_page') }}">
+                            <i class="fas fa-upload me-1"></i>Upload Manager
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('scheduler_page') }}">
+                            <i class="fas fa-clock me-1"></i>Scheduler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_browser_page') }}">
+                            <i class="fas fa-cloud me-1"></i>S3 Browser
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_management_page') }}">
+                            <i class="fas fa-cog me-1"></i>S3 Management
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item me-2">
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('config_page') }}" title="Конфигурация">
+                            <i class="fas fa-sliders-h me-1"></i>Configuration
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item me-2">
+                        <a class="btn btn-warning btn-sm" href="{{ url_for('admin_dashboard') }}" title="Админ-панель">
+                            <i class="fas fa-user-shield me-1"></i>Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item d-flex align-items-center me-3">
+                        <span id="connectionStatus" class="connection-status disconnected me-2"></span>
+                        <small id="connectionText" class="text-light">Disconnected</small>
+                    </li>
+                    <li class="nav-item d-flex align-items-center me-3">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
+                            <label class="form-check-label text-light mb-0" for="autoRefreshToggle">Auto-refresh</label>
+                        </div>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ current_user.username }}</span>
+                            {% if current_user.is_admin %}
+                                <span class="badge bg-warning text-dark ms-2">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-2"></i>Личный кабинет
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('config_page') }}">
+                                <i class="fas fa-sliders-h me-2"></i>Configuration
+                            </a></li>
+                            {% if current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-user-shield me-2"></i>Админ-панель
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Выход
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid page-content">
+        <!-- Заголовок с индикаторами статуса -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-2">Upload Manager</h1>
+                <div class="d-flex align-items-center">
+                    <span id="uploadStatusIndicator" class="status-indicator status-inactive">
+                        <i class="fas fa-pause me-1"></i> Ready
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- Configuration Selection -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Configuration Profile</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <label class="form-label">Select Configuration for Upload</label>
+                        <select class="form-select" id="uploadConfigSelector">
+                            <option value="">Loading...</option>
+                        </select>
+                        <small class="text-muted">Choose which configuration profile to use for this upload</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Mode Selection -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Upload Mode</h5>
+            </div>
+            <div class="card-body">
+                <div class="btn-group" role="group" id="uploadModeGroup">
+                    <input type="radio" class="btn-check" name="uploadMode" id="modeAuto" value="auto" checked>
+                    <label class="btn btn-outline-primary" for="modeAuto">
+                        <i class="fas fa-magic me-2"></i>Auto Scan
+                    </label>
+                    <input type="radio" class="btn-check" name="uploadMode" id="modeManual" value="manual">
+                    <label class="btn btn-outline-primary" for="modeManual">
+                        <i class="fas fa-hand-pointer me-2"></i>Manual Selection
+                    </label>
+                    <input type="radio" class="btn-check" name="uploadMode" id="modeFilter" value="filter">
+                    <label class="btn btn-outline-primary" for="modeFilter">
+                        <i class="fas fa-filter me-2"></i>Filtered Scan
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtered Scan Panel -->
+        <div class="card mb-4 d-none" id="filterPanel">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-filter me-2"></i>File Filters</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">File Extensions</label>
+                        <input type="text" class="form-control" id="fileExtensions" placeholder=".vbk, .vib, .txt, .bak">
+                        <small class="text-muted">Comma-separated list (e.g., .vbk, .vib, .txt)</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Min Size (MB)</label>
+                        <input type="number" class="form-control" id="minSize" min="0" step="1">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Max Size (MB)</label>
+                        <input type="number" class="form-control" id="maxSize" min="0" step="1">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Backup Days</label>
+                        <input type="number" class="form-control" id="backupDaysFilter" min="0" value="7">
+                        <small class="text-muted">0 = all files</small>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input" type="checkbox" id="skipTimeFilter">
+                            <label class="form-check-label" for="skipTimeFilter">Skip Time Filter</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-info mt-4" id="scanWithFilters">
+                            <i class="fas fa-search me-2"></i>Scan with Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual File Selection Panel -->
+        <div class="card mb-4 d-none" id="manualPanel">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-hand-pointer me-2"></i>Select Files</h5>
+                <button class="btn btn-sm btn-outline-secondary" id="openFileBrowser">
+                    <i class="fas fa-folder-open me-1"></i>Browse Files
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="selectedFilesList" class="mb-3">
+                    <p class="text-muted">No files selected. Use "Browse Files" to select files.</p>
+                </div>
+                <div id="selectedFilesSummary" class="alert alert-info d-none">
+                    <strong>Selected:</strong> <span id="selectedCount">0</span> files, 
+                    <span id="selectedSize">0 B</span> total
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Class Selection -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-database me-2"></i>Storage Class</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Select Storage Class for Upload</label>
+                        <select class="form-select" id="uploadStorageClass">
+                            <option value="STANDARD">STANDARD</option>
+                            <option value="GLACIER" selected>GLACIER</option>
+                            <option value="DEEP_ARCHIVE">DEEP ARCHIVE</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            GLACIER: Low-cost archive storage<br>
+                            DEEP_ARCHIVE: Lowest-cost archive storage<br>
+                            STANDARD: Standard storage (default)
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Current Config Storage Class</label>
+                        <input type="text" class="form-control" id="currentStorageClass" value="{{ config.STORAGE_CLASS or 'STANDARD' }}" readonly>
+                        <small class="form-text text-muted">This is your configured default storage class</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-primary" id="startUpload">
+                        <i class="fas fa-play me-2"></i>Start Upload
+                    </button>
+                    <button class="btn btn-warning" id="stopUpload" disabled>
+                        <i class="fas fa-pause me-2"></i>Stop Upload
+                    </button>
+                    <button class="btn btn-danger" id="abortUpload" disabled>
+                        <i class="fas fa-times-circle me-2"></i>Kill Upload
+                    </button>
+                    <button class="btn btn-info" id="testConnection">
+                        <i class="fas fa-plug me-2"></i>Test Connection
+                    </button>
+                    <button class="btn btn-secondary" id="scanFiles">
+                        <i class="fas fa-search me-2"></i>Scan Files
+                    </button>
+                    <button class="btn btn-outline-secondary" id="refreshStats">
+                        <i class="fas fa-sync me-2"></i>Refresh Stats
+                    </button>
+                    <button class="btn btn-outline-danger" id="clearLogs">
+                        <i class="fas fa-trash me-2"></i>Clear Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Upload Statistics</h5>
+            </div>
+            <div class="card-body">
+                <!-- Progress Bars -->
+                <div class="mb-3">
+                    <label>Overall Progress</label>
+                    <div class="progress">
+                        <div class="progress-bar" id="overallProgress" role="progressbar">0%</div>
+                    </div>
+                </div>
+
+                <!-- Statistics Details -->
+                <div class="row stats-row equal-height">
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="totalFiles">0</div>
+                                <div class="text-muted">Total Files</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="filesToUpload">0</div>
+                                <div class="text-muted">Files to Upload</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="successfulUploads">0</div>
+                                <div class="text-muted">Successful</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="failedUploads">0</div>
+                                <div class="text-muted">Failed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row stats-row equal-height mt-3">
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="skippedExisting">0</div>
+                                <div class="text-muted">Skipped (Existing)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="skippedTime">0</div>
+                                <div class="text-muted">Skipped (Time)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="uploadSpeed">0 B/s</div>
+                                <div class="text-muted">Upload Speed</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 stat-card">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <div class="stat-value" id="elapsedTime">00:00:00</div>
+                                <div class="text-muted">Elapsed Time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Statistics -->
+                <div class="mt-4">
+                    <label>Detailed Statistics</label>
+                    <pre class="bg-light p-3 rounded" id="detailedStats">No statistics available</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Progress Charts -->
+        <div class="row equal-height mb-4">
+            <div class="col-md-6">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-tachometer-alt me-2"></i>Upload Speed (Real-time)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="uploadSpeedChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-tasks me-2"></i>Files Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="filesProgressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-terminal me-2"></i>Logs</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="log-container p-3" id="logContainer">
+                    <!-- Logs will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/config-selector.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modal-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/file-selector.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/upload-charts.js') }}"></script>
+    <script>
+        // Initialize config selector on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initConfigSelector('uploadConfigSelector');
+        });
+    </script>
+</body>
+</html>

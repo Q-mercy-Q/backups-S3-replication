@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3 Bucket Browser - S3 Backup Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-cloud-upload-alt me-2"></i>S3 Backup Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('upload_manager_page') }}">
+                            <i class="fas fa-upload me-1"></i>Upload Manager
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('scheduler_page') }}">
+                            <i class="fas fa-clock me-1"></i>Scheduler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('s3_browser_page') }}">
+                            <i class="fas fa-cloud me-1"></i>S3 Browser
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_management_page') }}">
+                            <i class="fas fa-cog me-1"></i>S3 Management
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item me-2">
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('config_page') }}" title="Конфигурация">
+                            <i class="fas fa-sliders-h me-1"></i>Configuration
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item me-2">
+                        <a class="btn btn-warning btn-sm" href="{{ url_for('admin_dashboard') }}" title="Админ-панель">
+                            <i class="fas fa-user-shield me-1"></i>Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ current_user.username }}</span>
+                            {% if current_user.is_admin %}
+                                <span class="badge bg-warning text-dark ms-2">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-2"></i>Личный кабинет
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('config_page') }}">
+                                <i class="fas fa-sliders-h me-2"></i>Configuration
+                            </a></li>
+                            {% if current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-user-shield me-2"></i>Админ-панель
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Выход
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid page-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-2">S3 Bucket Browser</h1>
+                <p class="text-muted mb-0">Browse and navigate objects in your S3 bucket</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-secondary" id="refreshBucket">
+                    <i class="fas fa-sync me-1"></i>Refresh
+                </button>
+                <button class="btn btn-outline-info" id="showStats">
+                    <i class="fas fa-chart-bar me-1"></i>Stats
+                </button>
+            </div>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Bucket Info -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-1"><i class="fas fa-database me-2"></i>Bucket: <code>{{ bucket }}</code></h5>
+                        <small class="text-muted">S3 Storage Bucket</small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div id="bucketStats" class="text-muted">
+                            <small>Click "Stats" to view bucket statistics</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Breadcrumb Navigation -->
+        <div class="bucket-breadcrumb" id="breadcrumbContainer">
+            <div id="breadcrumb">
+                <span class="bucket-breadcrumb-item" data-path="">Root</span>
+            </div>
+        </div>
+
+        <!-- Objects Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-list me-2"></i>Objects</h5>
+                    <small class="text-muted" id="objectCount">Loading...</small>
+                    <span id="selectedCount" class="badge bg-primary d-none">0 selected</span>
+                </div>
+                <button class="btn btn-sm btn-danger d-none" id="deleteSelectedBtn">
+                    <i class="fas fa-trash me-1"></i>Delete Selected
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th class="objects-col-select">
+                                    <input type="checkbox" id="selectAllCheckbox" class="form-check-input" title="Select all">
+                                </th>
+                            <th class="objects-col-icon"></th>
+                            <th>Name</th>
+                            <th class="objects-col-size">Size</th>
+                            <th class="objects-col-modified">Modified</th>
+                            <th class="objects-col-storage-class">Storage Class</th>
+                            <th class="objects-col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="objectsTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Object Details Modal -->
+    <div class="modal fade" id="objectDetailsModal" tabindex="-1" aria-labelledby="objectDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="objectDetailsModalLabel">
+                        <i class="fas fa-file me-2"></i>Object Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="objectDetailsContent">
+                    Loading...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/modal-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/s3-browser.js') }}"></script>
+</body>
+</html>
+

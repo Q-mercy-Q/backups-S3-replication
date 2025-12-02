@@ -129,18 +129,35 @@ export class SchedulerUI {
     }
 
     _createScheduleCategoriesHTML(schedule) {
-        if (!schedule.categories || schedule.categories.length === 0) {
-            return '';
+        let html = '';
+        
+        // Показываем расширения файлов, если они используются
+        if (schedule.file_extensions && schedule.file_extensions.length > 0) {
+            const extensionBadges = schedule.file_extensions.map(ext => 
+                `<span class="badge bg-info text-white me-1 mb-1"><i class="fas fa-file-code me-1"></i>${ext}</span>`
+            ).join('');
+            html += `
+                <div class="mb-2">
+                    <small class="text-muted d-block mb-1">File Extensions:</small>
+                    ${extensionBadges}
+                </div>
+            `;
         }
-        const badges = schedule.categories.map(category => 
-            `<span class="badge bg-light text-dark border me-1 mb-1">${category}</span>`
-        ).join('');
-        return `
-            <div class="mb-2">
-                <small class="text-muted d-block mb-1">Categories:</small>
-                ${badges}
-            </div>
-        `;
+        
+        // Показываем категории, если они используются (и нет расширений)
+        if (schedule.categories && schedule.categories.length > 0 && (!schedule.file_extensions || schedule.file_extensions.length === 0)) {
+            const badges = schedule.categories.map(category => 
+                `<span class="badge bg-light text-dark border me-1 mb-1">${category}</span>`
+            ).join('');
+            html += `
+                <div class="mb-2">
+                    <small class="text-muted d-block mb-1">Categories:</small>
+                    ${badges}
+                </div>
+            `;
+        }
+        
+        return html;
     }
 
     _createScheduleIntervalHTML(intervalDisplay) {
@@ -385,7 +402,13 @@ export class SchedulerUI {
                         <i class="fas fa-power-off me-1"></i>
                         Status: <span class="badge ${schedule.enabled ? 'bg-success' : 'bg-secondary'}">${schedule.enabled ? 'Active' : 'Disabled'}</span>
                     </p>
-                ${schedule.categories && schedule.categories.length ? `
+                ${schedule.file_extensions && schedule.file_extensions.length ? `
+                <p class="text-muted">
+                    <i class="fas fa-file-code me-1"></i>
+                    File Extensions: ${schedule.file_extensions.join(', ')}
+                </p>
+                ` : ''}
+                ${schedule.categories && schedule.categories.length && (!schedule.file_extensions || schedule.file_extensions.length === 0) ? `
                 <p class="text-muted">
                     <i class="fas fa-tags me-1"></i>
                     Categories: ${schedule.categories.join(', ')}

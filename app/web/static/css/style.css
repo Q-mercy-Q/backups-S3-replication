@@ -1,48 +1,525 @@
-body {
-    background-color: #f8f9fa;
-    padding-top: 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* ============================================================================
+   GLOBAL STYLES & VARIABLES
+   ============================================================================ */
+
+:root {
+    /* Цветовая палитра */
+    --primary-color: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    
+    /* Фоновые цвета */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --bg-dark: #212529;
+    
+    /* Текстовые цвета */
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    
+    /* Границы */
+    --border-color: #dee2e6;
+    --border-radius-sm: 0.375rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 0.75rem;
+    
+    /* Отступы (единый стандарт) */
+    --spacing-xs: 0.25rem;   /* 4px */
+    --spacing-sm: 0.5rem;    /* 8px */
+    --spacing-md: 1rem;      /* 16px */
+    --spacing-lg: 1.5rem;    /* 24px */
+    --spacing-xl: 2rem;      /* 32px */
+    --spacing-xxl: 3rem;     /* 48px */
+    
+    /* Тени */
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --shadow-md: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --shadow-xl: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+    
+    /* Переходы */
+    --transition-fast: 0.15s ease-in-out;
+    --transition-base: 0.2s ease-in-out;
+    --transition-slow: 0.3s ease-in-out;
+    
+    /* Размеры шрифтов */
+    --font-size-xs: 0.75rem;   /* 12px */
+    --font-size-sm: 0.875rem;  /* 14px */
+    --font-size-base: 1rem;    /* 16px */
+    --font-size-lg: 1.125rem;  /* 18px */
+    --font-size-xl: 1.25rem;   /* 20px */
+    --font-size-xxl: 1.5rem;   /* 24px */
+    
+    /* Высота строк */
+    --line-height-tight: 1.2;
+    --line-height-base: 1.5;
+    --line-height-relaxed: 1.75;
 }
 
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+
+body {
+    background-color: var(--bg-secondary);
+    padding-top: 0;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    color: var(--text-primary);
+}
+
+/* ============================================================================
+   NAVBAR
+   ============================================================================ */
+
+.navbar {
+    margin-bottom: 0;
+    border-radius: 0;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================================
+   УНИВЕРСАЛЬНЫЕ ОТСТУПЫ ДЛЯ КОНТЕНТА ПОСЛЕ NAVBAR
+   ============================================================================ */
+
+/* Универсальный класс для контента после navbar */
+/* По умолчанию стандартный отступ для обычных navbar */
+.page-content {
+    padding-top: var(--spacing-lg) !important; /* 1.5rem = 24px */
+    margin-top: 0;
+}
+
+/* Для страниц с fixed-top navbar нужен больший отступ (6rem = 96px) */
+/* Используем селектор для элементов, следующих после fixed-top navbar */
+body:has(.navbar.fixed-top) .page-content {
+    padding-top: 6rem !important; /* 96px для fixed-top navbar */
+}
+
+/* Fallback для браузеров без поддержки :has() - используем селектор sibling */
+.navbar.fixed-top ~ .page-content {
+    padding-top: 6rem !important;
+}
+
+/* Дополнительный fallback - если page-content находится сразу после navbar */
+.navbar.fixed-top + .page-content {
+    padding-top: 6rem !important;
+}
+
+/* Дополнительный отступ для контейнеров после fixed-top navbar */
+body:has(.navbar.fixed-top) .container-fluid.page-content {
+    padding-top: 8rem !important; /* 128px для большей видимости заголовков */
+}
+
+/* Специфичные стили для S3 Browser и S3 Management страниц */
+body:has(.navbar.fixed-top) .page-content {
+    padding-top: 10rem !important; /* 160px для полной видимости заголовков */
+}
+
+.navbar.fixed-top ~ .container-fluid.page-content {
+    padding-top: 10rem !important;
+}
+
+/* Для всех контейнеров без класса page-content применяем стандартный отступ */
+body > .container-fluid:not(.page-content),
+body > .container:not(.page-content) {
+    padding-top: var(--spacing-lg) !important;
+    margin-top: 0;
+}
+
+/* ============================================================================
+   CARDS
+   ============================================================================ */
+
 .card {
-    margin-bottom: 20px;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    transition: box-shadow var(--transition-base);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
 }
 
 .card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
     font-weight: 600;
+    padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
+.card-body {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+}
+
+.card-body > *:last-child {
+    margin-bottom: 0;
+}
+
+.card-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.card-footer {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+}
+
+/* ============================================================================
+   BUTTONS
+   ============================================================================ */
+
+.btn {
+    font-weight: 500;
+    transition: all var(--transition-base);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+}
+
+.btn-warning.btn-sm {
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: #000;
+}
+
+.btn-warning.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    background-color: #ffca2c;
+    border-color: #ffca2c;
+}
+
+.btn-outline-light.btn-sm {
+    border-width: 1px;
+    font-weight: 500;
+}
+
+/* ============================================================================
+   FORMS
+   ============================================================================ */
+
+.form-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.form-control,
+.form-select {
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-sm) var(--spacing-md);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    outline: 0;
+}
+
+.form-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.form-check {
+    margin-bottom: var(--spacing-sm);
+}
+
+.form-check-label {
+    margin-left: var(--spacing-sm);
+    margin-bottom: 0;
+}
+
+.form-check.form-switch {
+    display: flex;
+    align-items: center;
+}
+
+/* ============================================================================
+   PROGRESS BARS
+   ============================================================================ */
+
 .progress {
-    height: 25px;
-    border-radius: 6px;
+    height: 1.5rem;
+    border-radius: var(--border-radius-sm);
     overflow: hidden;
+    background-color: var(--bg-tertiary);
 }
 
 .progress-bar {
     font-weight: 600;
-    font-size: 0.9rem;
-    transition: width 0.5s ease-in-out;
+    font-size: var(--font-size-sm);
+    transition: width var(--transition-slow);
 }
+
+.progress.progress-small {
+    height: 0.5rem;
+}
+
+/* ============================================================================
+   TABLES
+   ============================================================================ */
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-secondary);
+}
+
+/* ============================================================================
+   BADGES
+   ============================================================================ */
+
+.badge {
+    font-weight: 500;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.badge-success-rate {
+    background-color: var(--success-color);
+}
+
+.badge-warning-rate {
+    background-color: var(--warning-color);
+    color: #212529;
+}
+
+.badge-danger-rate {
+    background-color: var(--danger-color);
+}
+
+/* ============================================================================
+   ALERTS
+   ============================================================================ */
+
+.alert {
+    border: none;
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* ============================================================================
+   MODALS
+   ============================================================================ */
+
+.modal-content {
+    border-radius: var(--border-radius-lg);
+    border: none;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    padding: var(--spacing-md);
+}
+
+.modal-title {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: var(--spacing-md);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+}
+
+.modal {
+    z-index: 1060;
+}
+
+/* ============================================================================
+   NAVIGATION
+   ============================================================================ */
+
+.navbar-nav.align-items-center {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-nav .nav-link {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.navbar-nav .nav-item {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-nav .btn {
+    white-space: nowrap;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+}
+
+.dropdown-menu {
+    min-width: 200px;
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-xs);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    transition: background-color var(--transition-fast);
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-secondary);
+}
+
+.dropdown-item i {
+    width: 1.25rem;
+    text-align: center;
+    margin-right: var(--spacing-sm);
+}
+
+/* ============================================================================
+   TABS
+   ============================================================================ */
+
+.nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: var(--spacing-lg);
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    transition: all var(--transition-base);
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: transparent;
+}
+
+.tab-content {
+    padding-top: var(--spacing-md);
+}
+
+/* ============================================================================
+   LOG CONTAINER
+   ============================================================================ */
 
 .log-container {
     height: 400px;
     overflow-y: auto;
     background-color: #1e1e1e;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 0.875rem;
+    font-size: var(--font-size-sm);
     color: #d4d4d4;
-    border-radius: 4px;
-    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
 }
 
 .log-entry {
-    padding: 4px 8px;
+    padding: var(--spacing-xs) var(--spacing-sm);
     border-bottom: 1px solid #2d2d2d;
-    line-height: 1.4;
+    line-height: var(--line-height-base);
 }
 
 .log-info {
@@ -58,142 +535,101 @@ body {
     color: #ffb74d;
 }
 
-.stat-card {
-    text-align: center;
-    margin-bottom: 15px;
-}
-
-.stat-value {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #1976d2;
-}
-
-.stat-card .card-body {
-    padding: 1rem;
-}
-
-.connection-status {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 8px;
-    animation: pulse 2s infinite;
-}
-
-.connected {
-    background-color: #4caf50;
-}
-
-.disconnected {
-    background-color: #f44336;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
-
-/* Custom scrollbar for log container */
 .log-container::-webkit-scrollbar {
-    width: 8px;
+    width: 0.5rem;
 }
 
 .log-container::-webkit-scrollbar-track {
     background: #2d2d2d;
-    border-radius: 4px;
+    border-radius: var(--border-radius-sm);
 }
 
 .log-container::-webkit-scrollbar-thumb {
     background: #555;
-    border-radius: 4px;
+    border-radius: var(--border-radius-sm);
 }
 
 .log-container::-webkit-scrollbar-thumb:hover {
     background: #777;
 }
 
-/* Button styles */
-.btn {
-    font-weight: 500;
-    transition: all 0.2s ease-in-out;
+/* ============================================================================
+   STAT CARDS
+   ============================================================================ */
+
+.stat-card {
+    text-align: center;
+    margin-bottom: 0;
+    height: 100%;
 }
 
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+.stat-card .card-body {
+    padding: var(--spacing-md);
 }
 
-/* Form styles */
-.form-label {
-    font-weight: 500;
-    color: #495057;
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
 }
 
-.form-control, .form-select {
-    border-radius: 6px;
-    border: 1px solid #ced4da;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
 }
 
-.form-control:focus, .form-select:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+.stats-grid .stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    margin-bottom: 0;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .stat-card .stat-value {
-        font-size: 1.4rem;
-    }
-    
-    .card-body {
-        padding: 1rem;
-    }
-    
-    .btn {
-        margin-bottom: 5px;
-    }
+.stats-grid .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: var(--spacing-sm);
+    color: white;
 }
 
-/* Detailed stats pre formatting */
-#detailedStats {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 0.8rem;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+.stats-grid .stat-label {
+    font-size: var(--font-size-sm);
+    opacity: 0.9;
+    color: white;
 }
 
-/* Loading animation */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+/* ============================================================================
+   STATUS INDICATORS
+   ============================================================================ */
 
-.loading {
+.connection-status {
     display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #ffffff;
+    width: 0.75rem;
+    height: 0.75rem;
     border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s ease-in-out infinite;
-    margin-right: 8px;
+    margin-right: var(--spacing-sm);
+    animation: pulse 2s infinite;
+    vertical-align: middle;
 }
 
-/* Status indicators */
+.connected {
+    background-color: var(--success-color);
+}
+
+.disconnected {
+    background-color: var(--danger-color);
+}
+
 .status-indicator {
     display: inline-flex;
     align-items: center;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 0.75rem;
+    font-size: var(--font-size-xs);
     font-weight: 500;
 }
 
@@ -213,161 +649,375 @@ body {
 }
 
 /* ============================================================================
-   SCHEDULER SPECIFIC STYLES
+   ANIMATIONS
    ============================================================================ */
 
-/* Schedule cards hover effect */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: var(--spacing-sm);
+}
+
+/* ============================================================================
+   SCHEDULER SPECIFIC
+   ============================================================================ */
+
 .schedule-card {
-    transition: all 0.3s ease;
+    transition: all var(--transition-slow);
 }
 
 .schedule-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
 }
 
-/* Progress bar small variant */
-.progress.progress-small {
-    height: 8px;
-}
-
-/* Badge variants for success rates */
-.badge-success-rate {
-    background-color: #28a745;
-}
-
-.badge-warning-rate {
-    background-color: #ffc107;
-    color: #212529;
-}
-
-.badge-danger-rate {
-    background-color: #dc3545;
-}
-
-/* History item styles */
 .history-item {
-    border-left: 4px solid #28a745;
-    padding-left: 1rem;
-    margin-bottom: 1rem;
+    border-left: 4px solid var(--success-color);
+    padding-left: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
 }
 
 .history-item.failed {
-    border-left-color: #dc3545;
+    border-left-color: var(--danger-color);
 }
 
 .history-item.running {
-    border-left-color: #ffc107;
+    border-left-color: var(--warning-color);
 }
 
-/* Stats grid for scheduler */
-.stats-grid {
+/* ============================================================================
+   BUCKET TILES (S3 Management)
+   ============================================================================ */
+
+.bucket-tiles-container {
+    margin-bottom: var(--spacing-lg);
+}
+
+.bucket-tiles-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.bucket-tiles-search {
+    max-width: 300px;
+}
+
+.bucket-tiles-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
 }
 
-.stats-grid .stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.bucket-tile {
+    padding: var(--spacing-lg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    background: var(--bg-primary);
+    position: relative;
+}
+
+.bucket-tile:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.bucket-tile.selected {
+    background: #e7f1ff;
+    border-color: var(--primary-color);
+    border-width: 3px;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.bucket-tile.selected::before {
+    content: '✓';
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    width: 1.5rem;
+    height: 1.5rem;
+    background: var(--primary-color);
     color: white;
-    padding: 1.5rem;
-    border-radius: 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+    font-weight: bold;
+}
+
+.bucket-tile .bucket-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    border-radius: var(--border-radius-md);
+    color: white;
+    font-size: 1.75rem;
+    margin: 0 auto;
+}
+
+.bucket-tile .bucket-info {
+    flex: 1;
     text-align: center;
+}
+
+.bucket-tile .bucket-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-base);
+    word-break: break-word;
+}
+
+.bucket-tile .bucket-meta {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.bucket-tile .bucket-meta span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.bucket-config-section {
+    display: none;
+}
+
+.bucket-config-section.active {
+    display: block;
+}
+
+/* ============================================================================
+   S3 BROWSER SPECIFIC
+   ============================================================================ */
+
+.bucket-breadcrumb {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.bucket-breadcrumb-item {
+    cursor: pointer;
+    color: var(--primary-color);
+}
+
+.bucket-breadcrumb-item:hover {
+    text-decoration: underline;
+}
+
+.bucket-breadcrumb-item.active {
+    color: var(--text-secondary);
+    cursor: default;
+}
+
+.bucket-breadcrumb-item.active:hover {
+    text-decoration: none;
+}
+
+.s3-object-row {
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.s3-object-row:hover {
+    background-color: var(--bg-secondary);
+}
+
+.s3-object-icon {
+    width: 1.25rem;
+    text-align: center;
+    margin-right: var(--spacing-sm);
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+.text-success { color: var(--success-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.text-danger { color: var(--danger-color) !important; }
+.text-primary { color: var(--primary-color) !important; }
+.text-info { color: var(--info-color) !important; }
+
+.bg-success { background-color: var(--success-color) !important; }
+.bg-warning { background-color: var(--warning-color) !important; }
+.bg-danger { background-color: var(--danger-color) !important; }
+.bg-secondary { background-color: var(--secondary-color) !important; }
+.bg-light { background-color: var(--bg-secondary) !important; }
+
+/* ============================================================================
+   LAYOUT UTILITIES
+   ============================================================================ */
+
+.container-fluid {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.container {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.dashboard-grid .card {
     margin-bottom: 0;
 }
 
-.stats-grid .stat-number {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    color: white;
+.row.equal-height {
+    display: flex;
+    flex-wrap: wrap;
 }
 
-.stats-grid .stat-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-    color: white;
+.row.equal-height > [class*="col-"] {
+    display: flex;
 }
 
-/* Ensure proper spacing in scheduler */
-#schedulerStats .row {
-    margin-left: -10px;
-    margin-right: -10px;
+.row.equal-height > [class*="col-"] > .card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-#schedulerStats .stat-card {
-    padding-left: 10px;
-    padding-right: 10px;
+.quick-actions-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
 }
 
-/* Modal styles */
-.modal-content {
-    border-radius: 8px;
-    border: none;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+.quick-actions-row .btn {
+    margin-bottom: 0;
 }
 
-.modal-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 8px 8px 0 0;
+.chart-card {
+    min-height: 350px;
 }
 
-.modal-title {
-    font-weight: 600;
-    color: #495057;
+.chart-card .card-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
 }
 
-/* Form text adjustments */
-.form-text {
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
+.card canvas {
+    max-height: 400px;
+    width: 100% !important;
 }
 
-/* Button group spacing */
-.d-flex.gap-2 > * {
-    margin-right: 0.5rem;
+/* ============================================================================
+   SPACING UTILITIES (унифицированные отступы)
+   ============================================================================ */
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: var(--spacing-xs) !important; }
+.mb-2 { margin-bottom: var(--spacing-sm) !important; }
+.mb-3 { margin-bottom: var(--spacing-md) !important; }
+.mb-4 { margin-bottom: var(--spacing-lg) !important; }
+.mb-5 { margin-bottom: var(--spacing-xl) !important; }
+
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: var(--spacing-xs) !important; }
+.mt-2 { margin-top: var(--spacing-sm) !important; }
+.mt-3 { margin-top: var(--spacing-md) !important; }
+.mt-4 { margin-top: var(--spacing-lg) !important; }
+.mt-5 { margin-top: var(--spacing-xl) !important; }
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: var(--spacing-xs) !important; }
+.p-2 { padding: var(--spacing-sm) !important; }
+.p-3 { padding: var(--spacing-md) !important; }
+.p-4 { padding: var(--spacing-lg) !important; }
+.p-5 { padding: var(--spacing-xl) !important; }
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 991px) {
+    .navbar-nav {
+        margin-top: var(--spacing-md);
+    }
+    
+    .navbar-nav .nav-item {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .navbar-nav .btn {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
 }
 
-.d-flex.gap-2 > *:last-child {
-    margin-right: 0;
-}
-
-/* Card title adjustments */
-.card-title {
-    color: #495057;
-    font-weight: 600;
-}
-
-/* Badge adjustments */
-.badge {
-    font-weight: 500;
-    font-size: 0.75rem;
-}
-
-/* Text color utilities */
-.text-muted {
-    color: #6c757d !important;
-}
-
-/* Ensure proper container fluid behavior */
-.container-fluid {
-    padding-left: 20px;
-    padding-right: 20px;
-}
-
-/* Table-like responsive behavior */
 @media (max-width: 768px) {
-    .container-fluid {
-        padding-left: 15px;
-        padding-right: 15px;
+    .container-fluid,
+    .container {
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+    
+    .stat-card .stat-value {
+        font-size: 1.4rem;
+    }
+    
+    .card-body {
+        padding: var(--spacing-md);
+    }
+    
+    .btn {
+        margin-bottom: var(--spacing-xs);
     }
     
     .stats-grid {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 0.5rem;
+        gap: var(--spacing-sm);
     }
     
     .stats-grid .stat-number {
@@ -375,66 +1025,316 @@ body {
     }
     
     .stats-grid .stat-card {
-        padding: 1rem;
+        padding: var(--spacing-md);
     }
     
     .schedule-card:hover {
-        transform: none; /* Disable hover effect on mobile */
+        transform: none;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+    
+    .row.equal-height {
+        flex-direction: column;
+    }
+    
+    .row.equal-height > [class*="col-"] {
+        width: 100%;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .row.equal-height > [class*="col-"]:last-child {
+        margin-bottom: 0;
+    }
+    
+    .quick-actions-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-card {
+        min-height: 250px;
+    }
+    
+    .chart-card .card-body {
+        min-height: 200px;
+    }
+    
+    .bucket-tiles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: var(--spacing-sm);
+    }
+    
+    .bucket-tiles-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .bucket-tiles-search {
+        max-width: 100%;
+        width: 100%;
     }
 }
 
-/* Fix for form controls in scheduler */
+/* ============================================================================
+   ADDITIONAL IMPROVEMENTS
+   ============================================================================ */
+
+/* Улучшенное форматирование для JSON редакторов */
+.json-editor {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+/* Конфигурационные секции */
+.config-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Статистические бейджи */
+.stat-badge {
+    font-size: var(--font-size-sm);
+}
+
+/* Улучшенные заголовки */
+h1, h2, h3, h4, h5, h6 {
+    line-height: var(--line-height-tight);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+/* Улучшенные списки */
+ul, ol {
+    margin-bottom: var(--spacing-md);
+    padding-left: var(--spacing-lg);
+}
+
+/* Улучшенные разделители */
+hr {
+    margin: var(--spacing-lg) 0;
+    border: 0;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Улучшенные ссылки */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+/* Улучшенные изображения */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Улучшенные коды */
+code {
+    background-color: var(--bg-tertiary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+pre {
+    background-color: var(--bg-tertiary);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    overflow-x: auto;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-base);
+}
+
+/* Улучшенные детали статистики */
+#detailedStats {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: var(--line-height-base);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding: var(--spacing-md);
+    height: 150px;
+    overflow-y: auto;
+}
+
+/* Исправление для форм в scheduler */
 #addScheduleForm .row {
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
+    margin-left: calc(var(--spacing-sm) * -1);
+    margin-right: calc(var(--spacing-sm) * -1);
 }
 
 #addScheduleForm .row > [class*="col-"] {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
 }
 
-/* Alert notification styles */
-.alert {
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+/* Исправление для статистики scheduler */
+#schedulerStats .row {
+    margin-left: calc(var(--spacing-sm) * -1);
+    margin-right: calc(var(--spacing-sm) * -1);
 }
 
-.alert-success {
-    background-color: #d4edda;
-    color: #155724;
+#schedulerStats .stat-card {
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
 }
 
-.alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
+/* Выравнивание для карточек статуса */
+#uploadStatusCard,
+#schedulerStatusCard {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.alert-info {
-    background-color: #d1ecf1;
-    color: #0c5460;
+/* Убираем отступы для последней карточки в ряду */
+.row:last-child .card:last-child {
+    margin-bottom: 0;
 }
 
-/* Ensure proper z-index for modal */
-.modal {
-    z-index: 1060;
+.stats-row {
+    margin-bottom: var(--spacing-md);
 }
 
-/* Fix for progress bars in cards */
-.card .progress {
-    margin-bottom: 0.5rem;
+.stats-row:last-child {
+    margin-bottom: 0;
 }
 
-/* Utility classes for text colors */
-.text-success { color: #28a745 !important; }
-.text-warning { color: #ffc107 !important; }
-.text-danger { color: #dc3545 !important; }
-.text-primary { color: #007bff !important; }
+.stats-row .stat-card {
+    height: 100%;
+    margin-bottom: 0;
+}
 
-/* Background color utilities */
-.bg-success { background-color: #28a745 !important; }
-.bg-warning { background-color: #ffc107 !important; }
-.bg-danger { background-color: #dc3545 !important; }
-.bg-secondary { background-color: #6c757d !important; }
-.bg-light { background-color: #f8f9fa !important; }
+.stats-row .stat-card > .card {
+    height: 100%;
+}
+
+/* ============================================================================
+   PROFILE PAGE
+   ============================================================================ */
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: #6c757d;
+    border: 3px solid #dee2e6;
+}
+
+.info-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+.user-badge {
+    font-size: 0.875rem;
+}
+
+/* ============================================================================
+   AUTH PAGES LAYOUT
+   ============================================================================ */
+
+.auth-full-height-row {
+    min-height: 100vh;
+}
+
+/* ============================================================================
+   S3 BROWSER TABLE COLUMNS
+   ============================================================================ */
+
+.objects-col-select,
+.objects-col-icon {
+    width: 40px;
+}
+
+.objects-col-size {
+    width: 120px;
+}
+
+.objects-col-modified {
+    width: 180px;
+}
+
+.objects-col-storage-class {
+    width: 120px;
+}
+
+.objects-col-actions {
+    width: 100px;
+}
+
+/* ============================================================================
+   CONFIG PAGE PREVIEW
+   ============================================================================ */
+
+#configPreview {
+    font-size: 0.85rem;
+    height: 240px;
+    overflow-y: auto;
+}
+
+.config-col-size {
+    width: 120px;
+}
+
+.config-col-modified {
+    width: 160px;
+}
+
+/* ============================================================================
+   S3 MANAGEMENT POLICY & EDITOR
+   ============================================================================ */
+
+#policyTemplateContent {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#bucketPolicy {
+    display: none;
+}
+
+/* ============================================================================
+   SCHEDULER DEBUG LOGS
+   ============================================================================ */
+
+#debugLogsContainer {
+    height: 300px;
+    font-size: 0.8rem;
+}
+
+/* ============================================================================
+   SCHEDULER INTERVAL SELECT
+   ============================================================================ */
+
+#scheduleIntervalUnit {
+    max-width: 120px;
+}
+
+/* ============================================================================
+   UPLOAD MANAGER PROGRESS & DETAILS
+   ============================================================================ */
+
+#overallProgress {
+    width: 0%;
+}

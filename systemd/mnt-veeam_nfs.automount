@@ -1,0 +1,15 @@
+[Unit]
+Description=Automount NFS for Veeam backups
+After=network-online.target
+Wants=network-online.target
+
+[Automount]
+Where=/mnt/veeam_nfs
+TimeoutIdleSec=300
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+

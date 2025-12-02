@@ -9,24 +9,181 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container-fluid py-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-cloud-upload-alt me-2"></i>S3 Backup Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('upload_manager_page') }}">
+                            <i class="fas fa-upload me-1"></i>Upload Manager
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('scheduler_page') }}">
+                            <i class="fas fa-clock me-1"></i>Scheduler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_browser_page') }}">
+                            <i class="fas fa-cloud me-1"></i>S3 Browser
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('s3_management_page') }}">
+                            <i class="fas fa-cog me-1"></i>S3 Management
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item me-2">
+                        <a class="btn btn-outline-light btn-sm active" href="{{ url_for('config_page') }}" title="Конфигурация">
+                            <i class="fas fa-sliders-h me-1"></i>Configuration
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item me-2">
+                        <a class="btn btn-warning btn-sm" href="{{ url_for('admin_dashboard') }}" title="Админ-панель">
+                            <i class="fas fa-user-shield me-1"></i>Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ current_user.username }}</span>
+                            {% if current_user.is_admin %}
+                                <span class="badge bg-warning text-dark ms-2">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="fas fa-user me-2"></i>Личный кабинет
+                            </a></li>
+                            <li><a class="dropdown-item active" href="{{ url_for('config_page') }}">
+                                <i class="fas fa-sliders-h me-2"></i>Configuration
+                            </a></li>
+                            {% if current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fas fa-user-shield me-2"></i>Админ-панель
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Выход
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid page-content">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h1 class="mb-0">Configuration</h1>
+                <h1 class="mb-2">Configuration</h1>
                 <p class="text-muted mb-0">Manage upload settings, categories and source files</p>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
-                </a>
-                <a href="{{ url_for('scheduler_page') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-clock me-1"></i> Scheduler
-                </a>
+        </div>
+        
+        <!-- Configuration Selector Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Select Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Configuration Profile</label>
+                        <select class="form-select" id="configSelector">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary" id="createConfigBtn">
+                                <i class="fas fa-plus me-1"></i>Create New
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="renameConfigBtn" disabled>
+                                <i class="fas fa-edit me-1"></i>Rename
+                            </button>
+                            <button type="button" class="btn btn-danger" id="deleteConfigBtn" disabled>
+                                <i class="fas fa-trash me-1"></i>Delete
+                            </button>
+                            <button type="button" class="btn btn-success" id="setDefaultConfigBtn" disabled>
+                                <i class="fas fa-star me-1"></i>Set Default
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="configInfo" class="mt-2">
+                    <small class="text-muted">Select a configuration profile to view or edit</small>
+                </div>
             </div>
         </div>
 
         <div class="row">
             <div class="col-lg-7">
+                <!-- NFS Mount Management Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-network-wired me-2"></i>NFS Mount Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="nfsStatusAlert" class="alert d-none"></div>
+                        <div class="mb-3">
+                            <label class="form-label">NFS Server</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="nfsServer" placeholder="172.20.129.1:/backups" value="">
+                                <button class="btn btn-outline-info" type="button" id="testNfsServer">
+                                    <i class="fas fa-search me-1"></i>Test
+                                </button>
+                            </div>
+                            <small class="text-muted">Format: SERVER:/path (e.g., 127.0.0.1:/backups)</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mount Point</label>
+                            <input type="text" class="form-control" id="nfsMountPoint" placeholder="/mnt/veeam_nfs" value="{{ config.NFS_PATH or '/mnt/veeam_nfs' }}">
+                            <small class="text-muted">Local directory where NFS will be mounted</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">NFS Options</label>
+                            <input type="text" class="form-control" id="nfsOptions" placeholder="vers=4.1,soft,timeo=30,retrans=3,noatime" value="vers=4.1,soft,timeo=30,retrans=3,noatime">
+                            <small class="text-muted">Mount options (leave default for most cases)</small>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-secondary" id="createDirectory">
+                                <i class="fas fa-folder-plus me-1"></i>Create Directory
+                            </button>
+                            <button type="button" class="btn btn-success" id="mountNfs">
+                                <i class="fas fa-link me-1"></i>Mount NFS
+                            </button>
+                            <button type="button" class="btn btn-warning" id="unmountNfs">
+                                <i class="fas fa-unlink me-1"></i>Unmount NFS
+                            </button>
+                            <button type="button" class="btn btn-info" id="checkNfsStatus">
+                                <i class="fas fa-sync me-1"></i>Check Status
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2">Directory will be created automatically when mounting if it doesn't exist</small>
+                        <div id="nfsStatusInfo" class="mt-3">
+                            <small class="text-muted">Click "Check Status" to see current mount status</small>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Connection Settings</h5>
@@ -38,6 +195,7 @@
                                     <div class="mb-3">
                                         <label class="form-label">NFS Path *</label>
                                         <input type="text" class="form-control" id="nfsPath" value="{{ config.NFS_PATH }}" required>
+                                        <small class="text-muted">Mount point path (configure above first)</small>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">S3 Endpoint *</label>
@@ -73,10 +231,6 @@
                                             <option value="DEEP_ARCHIVE" {% if config.STORAGE_CLASS == 'DEEP_ARCHIVE' %}selected{% endif %}>DEEP ARCHIVE</option>
                                         </select>
                                     </div>
-                                    <div class="form-check form-switch mb-3">
-                                        <input class="form-check-input" type="checkbox" id="enableTapeStorage" {% if config.ENABLE_TAPE_STORAGE %}checked{% endif %}>
-                                        <label class="form-check-label" for="enableTapeStorage">Enable Tape Storage</label>
-                                    </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
@@ -94,6 +248,11 @@
                                 </div>
                             </div>
 
+                            <div class="mb-3">
+                                <label class="form-label">File Extension Mapping</label>
+                                <textarea class="form-control" id="extTagMap" rows="5" placeholder='{".vbk": "full", ".vib": "incremental", ".vbm": "metadata", ".log": "logs"}'>{{ config.EXT_TAG_MAP | tojson if config.EXT_TAG_MAP else '{}' }}</textarea>
+                                <div class="form-text">JSON mapping of file extensions to categories. Example: {".vbk": "full", ".vib": "incremental", ".txt": "custom"}</div>
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Backup Categories</label>
                                 <div class="d-flex flex-wrap gap-3" id="categoryOptions">
@@ -146,8 +305,8 @@
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <th style="width: 120px;">Size</th>
-                                        <th style="width: 160px;">Modified</th>
+                                        <th class="config-col-size">Size</th>
+                                        <th class="config-col-modified">Modified</th>
                                     </tr>
                                 </thead>
                                 <tbody id="fileBrowserBody">
@@ -165,7 +324,7 @@
                         <h5 class="card-title mb-0"><i class="fas fa-code me-2"></i>Configuration Preview</h5>
                     </div>
                     <div class="card-body">
-                        <pre class="bg-light p-3 rounded" id="configPreview" style="font-size: 0.85rem; height: 240px; overflow-y: auto;">Loading...</pre>
+                        <pre class="bg-light p-3 rounded" id="configPreview">Loading...</pre>
                     </div>
                 </div>
             </div>
@@ -173,7 +332,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/config.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/modal-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/config-multi.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/nfs.js') }}" type="module"></script>
 </body>
 </html>
 
